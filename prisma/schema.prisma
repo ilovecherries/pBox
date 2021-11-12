@@ -1,0 +1,65 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "sqlite"
+    url      = "file:./db.sqlite"
+}
+
+model User {
+    id              Int     @id @default(autoincrement())
+    username        String  @unique
+    operator        Boolean
+    hashed_password String
+    salt            String
+    Post            Post[]
+    Vote            Vote[]
+}
+
+model Category {
+    id   Int    @id @default(autoincrement())
+    name String @unique
+    Post Post[]
+}
+
+model Tag {
+    id                  Int                   @id @default(autoincrement())
+    name                String                @unique
+    PostTagRelationship PostTagRelationship[]
+}
+
+model Post {
+    id                  Int                   @id @default(autoincrement())
+    title               String                @unique
+    content             String
+    author              User                  @relation(fields: [authorId], references: [id])
+    authorId            Int
+    createDate          DateTime              @default(now())
+    editDate            DateTime              @default(now())
+    category            Category              @relation(fields: [categoryId], references: [id])
+    categoryId          Int
+    votes               Vote[]
+    score               Int
+    PostTagRelationship PostTagRelationship[]
+}
+
+model Vote {
+    user   User @relation(fields: [userId], references: [id])
+    userId Int
+    post   Post @relation(fields: [postId], references: [id])
+    postId Int
+    score  Int
+
+    @@id([userId, postId])
+    @@unique([userId, postId])
+}
+
+model PostTagRelationship {
+    post   Post @relation(fields: [postId], references: [id])
+    postId Int
+    tag    Tag  @relation(fields: [tagId], references: [id])
+    tagId  Int
+
+    @@id([postId, tagId])
+}
