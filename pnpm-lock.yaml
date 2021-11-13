@@ -1,6 +1,7 @@
 lockfileVersion: 5.3
 
 specifiers:
+  '@prisma/client': ^3.4.2
   '@types/bcrypt': ^5.0.0
   '@types/node': 16.11.7
   '@types/react': 17.0.34
@@ -16,6 +17,7 @@ specifiers:
   typescript: 4.4.4
 
 dependencies:
+  '@prisma/client': 3.4.2_prisma@3.4.2
   bcrypt: 5.0.1
   client: 0.0.1
   iron-session: 6.0.2_next@12.0.3
@@ -362,6 +364,24 @@ packages:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.13.0
     dev: true
+
+  /@prisma/client/3.4.2_prisma@3.4.2:
+    resolution: {integrity: sha512-HyQGq9m1V99zpNSJ/FojZJnvzqWUd18ErIXwxLzSuurS23XlhHEPtxgpxJaegBmjsr/KCYqcXFOPmM1gRLpI0w==}
+    engines: {node: '>=12.6'}
+    requiresBuild: true
+    peerDependencies:
+      prisma: '*'
+    peerDependenciesMeta:
+      prisma:
+        optional: true
+    dependencies:
+      '@prisma/engines-version': 3.4.1-2.57771c0558568c7d08bd34c7248af5244ae16bd9
+      prisma: 3.4.2
+    dev: false
+
+  /@prisma/engines-version/3.4.1-2.57771c0558568c7d08bd34c7248af5244ae16bd9:
+    resolution: {integrity: sha512-H8bnBT5jLap+0nULBAGjf+xb5XNn4d60U4J9cck+UanyEkeMS3aYCeHvNiQl46XwvN60jkUX8BwV3NOEmPh0SQ==}
+    dev: false
 
   /@prisma/engines/3.4.1-2.57771c0558568c7d08bd34c7248af5244ae16bd9:
     resolution: {integrity: sha512-NO4Q88k3CfUpYzfpDD+0wSVCqhaeljCFAGSe1XyvmXAOlMU2AAjCwmRn6S4UXlT9yEGB/LwFjdvGjcgfUQ+Mtw==}

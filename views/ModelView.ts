@@ -35,7 +35,7 @@ export class ModelUtil {
         return delegate.findUnique({ where: { id } })
             .then((model: Partial<T> | null) => {
                 if (model === null) {
-                    Promise.reject(new Error(`${ctor.toString()}  is null`))
+                    Promise.reject(new Error(`${ctor.toString()} not found`))
                 }
 
                 new ctor(model as T)

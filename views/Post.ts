@@ -1,6 +1,7 @@
-import { HasDto, IsModel } from "./ModelView";
-import { Tag } from "./Tag";
+import prisma from "../lib/prisma";
+import { HasDto, IsModel, ModelUtil } from "./ModelView";
 import { User } from "./User";
+import { Vote } from "./Vote";
 
 export interface PostData {
     title: string
@@ -9,6 +10,10 @@ export interface PostData {
 
 export interface PostDto extends PostData {
     id: number
+}
+
+export interface PostAuthDto extends PostDto {
+    myScore: number
 }
 
 export class Post implements PostData, HasDto<PostDto>, IsModel {
@@ -28,5 +33,24 @@ export class Post implements PostData, HasDto<PostDto>, IsModel {
             title: this.title,
             content: this.content
         }
+    }
+
+    static getManyWithMyScore(posts: Post[], user: User): PostAuthDto[] {
+        return ModelUtil.getList(Vote, prisma.vote, {
+            where: { 
+                userId: user.id,
+                postId: { in: posts.map(p => p.id) } 
+            },
+        })
+        .then(votes => posts.map(post => {
+            const postAuthDto: PostAuthDto = {
+                id: post.id,
+                title: post.title,
+                content: post.content,
+                myScore: votes.find(v => v.userId === user.id)?.score ?? 0
+            }
+
+            return postAuthDto
+        }))
     }
 }

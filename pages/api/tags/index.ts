@@ -1,22 +1,35 @@
-import { NextApiRequest, NextApiHandler, NextApiResponse } from "next";
+import { withIronSessionApiRoute } from "iron-session/next";
+import { NextApiRequest, NextApiResponse } from "next";
+import { ironConfig, sessionWrapper } from "../../../lib/ironconfig";
 import prisma from "../../../lib/prisma";
 import { ModelUtil } from "../../../views/ModelView";
 import { Tag } from "../../../views/Tag";
-import { User } from "../../../views/User";
+
+export default withIronSessionApiRoute(tagsHandler, ironConfig)
 
 type StatusData = {
     error?: string,
-    tags?: Tag[]
+    tags?: Tag[],
+    tag?: Tag
 }
 
-export default function handler(
+function tagsHandler(
     req: NextApiRequest,
     res: NextApiResponse<StatusData>
-): NextApiHandler {
+) {
     switch (req.method) {
         case "GET":
             getTags()
             break
+        case 'POST':
+            sessionWrapper(req.session).then(user => {
+                if (user.operator === false) {
+                    res.status(401).json({ error: 'Must be an operator to create tags' })
+                }
+
+                postTag()
+            })
+            .catch(e => res.status(401).json({ error: e.message }))
         default:
             res.status(405).end()
     }
@@ -24,6 +37,25 @@ export default function handler(
     function getTags() {
         ModelUtil.getList(Tag, prisma.tag).then((tags: Tag[]) => {
             res.status(200).json({ tags })
+        })
+    }
+
+    function postTag() {
+        const { name, color} = req.body
+        
+        if (!name || !color) {
+            res.status(400).json({ error: "name and color are required" })
+            return
+        }
+
+        prisma.tag.create({
+            data: {
+                name: req.body.name,
+                color: req.body.color,
+            }
+        }).then((tag: Partial<Tag>) => {
+            const tagD = new Tag(tag)
+            res.status(200).json({ tag: tagD })
         })
     }
 }
