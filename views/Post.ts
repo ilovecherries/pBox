@@ -1,4 +1,4 @@
-import { HasDto } from "./ModelView";
+import { HasDto, IsModel } from "./ModelView";
 import { Tag } from "./Tag";
 import { User } from "./User";
 
@@ -11,12 +11,11 @@ export interface PostDto extends PostData {
     id: number
 }
 
-export class Post implements PostData, HasDto<PostDto> {
+export class Post implements PostData, HasDto<PostDto>, IsModel {
     public id: number = 0
     public title: string = ''
     public content: string = ''
     public author: User | undefined
-    public tags: Tag[] | undefined
     public score: number = 0
 
     constructor(postPartial: Partial<Post> = {}) {

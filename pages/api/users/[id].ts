@@ -22,7 +22,13 @@ async function userHandler(
     } 
 
     const { userId } = req.session
+
+    if (userId === undefined) {
+        res.status(401).json({error: "Not logged in"})
+    }
+
     const authUser = await prisma.user.findUnique({where: {id: userId}})
+
     if (authUser === null) {
         res.status(403).json({error: "User not found"})
         return
@@ -51,9 +57,25 @@ async function userHandler(
 
     const userD = new User(user)
 
-    if (req.method === "GET") {
+    switch (req.method) {
+        case 'GET':
+            getUser()
+            break
+        case 'PUT':
+            putUser()
+            break
+        case 'DELETE':
+            deleteUser()
+            break
+        default:
+            res.status(405).json({ error: "Method not allowed" })
+    }
+
+    function getUser() {
         res.status(200).json({user: userD.toDto()})
-    } else if (req.method === "PUT") {
+    }
+
+    function putUser() {
         const { username, operator } = req.body
         prisma.user.update({
             where: {id},
@@ -69,7 +91,9 @@ async function userHandler(
 
             res.status(200).json({user: new User(user).toDto()})
         })
-    } else if (req.method === "DELETE") {
+    }
+
+    function deleteUser() {
         userD.delete().then(() => {
             res.status(201).json({user: userD.toDto()})
         });

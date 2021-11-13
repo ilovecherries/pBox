@@ -3,6 +3,7 @@ import { withIronSessionApiRoute } from "iron-session/next";
 import { NextApiRequest, NextApiResponse } from "next";
 import { ironConfig } from "../../../lib/ironconfig";
 import prisma from "../../../lib/prisma";
+import { ModelUtil } from "../../../views/ModelView";
 import { User, UserDto } from "../../../views/User";
 
 export default withIronSessionApiRoute(usersHandler, ironConfig)
@@ -40,13 +41,8 @@ function usersHandler(
                 return
             }
 
-            prisma.user.findMany().then((users: Array<Partial<User>>) => {
-                const userDtos: UserDto[] = users.map((user: Partial<User>) => 
-                    new User(user).toDto()
-                )
-                res.status(200).json({
-                    users: userDtos
-                })
+            ModelUtil.getList(User, prisma.user).then((users: User[]) => {
+                res.status(200).json({ users: users.map(u => u.toDto()) })
             })
         })
 

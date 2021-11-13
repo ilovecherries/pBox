@@ -15,12 +15,6 @@ async function userHandler(
     req: NextApiRequest,
     res: NextApiResponse<StatusData>
 ) {
-    if (req.method !== "GET" && 
-        req.method !== "PUT" &&
-        req.method !== "DELETE") {
-            res.status(405).json({ error: "Method not allowed" })
-    } 
-
     const { userId } = req.session
 
     if (userId === undefined) {
@@ -31,14 +25,30 @@ async function userHandler(
     const user = await prisma.user.findUnique({where: {id: userId}})
 
     if (user === null) {
-        res.status(403).json({error: "user not found"});
+        res.status(403).json({ error: "user not found" });
     }
 
     const userD = new User(user as Partial<User>)
 
-    if (req.method === "GET") {
-        res.status(200).json({user: userD.toDto()})
-    } else if (req.method === "PUT") {
+    switch (req.method) {
+        case 'GET':
+            getUser()
+            break
+        case 'POST':
+            putUser()
+            break
+        case 'DELETE':
+            deleteUser()
+            break
+        default:
+            res.status(405).json({ error: "Method not allowed" })
+    }
+
+    function getUser() {
+        res.status(200).json({ user: userD.toDto() })
+    }
+
+    function putUser() {
         const { username } = req.body
         prisma.user.update({
             where: {id: userId},
@@ -47,18 +57,17 @@ async function userHandler(
             }
         }).then((user: Partial<User> | null) => {
             if (user === null) {
-                res.status(404).json({error: "User not found"})
+                res.status(404).json({ error: "User not found" })
                 return
             }
 
-            res.status(200).json({user: new User(user).toDto()})
+            res.status(200).json({ user: new User(user).toDto() })
         })
-    } else if (req.method === "DELETE") {
-        userD.delete().then(() => {
-            res.status(201).json({user: userD.toDto()})
-        });
     }
 
-    let dto = new User(user as Partial<User>).toDto()
-    res.json({user: dto})
+    function deleteUser() {
+        userD.delete().then(() => {
+            res.status(201).json({ user: userD.toDto() })
+        });
+    }
 }
