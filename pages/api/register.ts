@@ -11,6 +11,11 @@ export default function registerHandler(
     req: NextApiRequest, 
     res: NextApiResponse<StatusData>
 ) {
+    if (req.method !== 'POST') {
+        res.status(405).end()
+        return
+    }
+
     const { username, password } = req.body;
 
     if (!username || !password)

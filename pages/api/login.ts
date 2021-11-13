@@ -15,6 +15,11 @@ function loginHandler(
     req: any, 
     res: NextApiResponse<StatusData>
 ) {
+    if (req.method !== 'POST') {
+        res.status(405).end()
+        return
+    }
+
     const { username, password } = req.body;
 
     if (username === undefined || password === undefined) {
