@@ -4,6 +4,7 @@ import { ironConfig, sessionWrapper } from "../../../lib/ironconfig";
 import prisma from "../../../lib/prisma"
 import { ModelUtil } from "../../../views/ModelView"
 import { Post, PostDto } from "../../../views/Post"
+import { User } from "../../../views/User";
 
 export default withIronSessionApiRoute(postsHandler, ironConfig);
 
@@ -22,7 +23,7 @@ function postsHandler(
             getPosts()
             break
         case 'POST':
-            sessionWrapper(req.session).then(_ => { postPost() })
+            sessionWrapper(req.session).then(user => { postPost(user) })
             .catch(e => res.status(401).json({ error: e.message }))
             break
         default:
@@ -35,7 +36,7 @@ function postsHandler(
         })
     }
 
-    function postPost() {
+    function postPost(user: User) {
         const { title, content } = req.body
         if (!title || !content) {
             res.status(400).json({ error: 'title and content are required' })
@@ -43,7 +44,9 @@ function postsHandler(
         prisma.post.create({
             data: {
                 title,
-                content
+                content,
+                authorId: user.id,
+                score: 0
             }
         }).then((post: Post) => {
             res.status(201).json({ post: new Post(post).toDto() })
