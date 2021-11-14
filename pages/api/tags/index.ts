@@ -25,6 +25,7 @@ function tagsHandler(
             sessionWrapper(req.session).then(user => {
                 if (user.operator === false) {
                     res.status(401).json({ error: 'Must be an operator to create tags' })
+                    return
                 }
 
                 postTag()
@@ -40,11 +41,16 @@ function tagsHandler(
         })
     }
 
-    function postTag() {
+    async function postTag() {
         const { name, color} = req.body
         
         if (!name || !color) {
             res.status(400).json({ error: "name and color are required" })
+            return
+        }
+
+        if (await prisma.tag.findUnique({ where: { name } }) !== null) {
+            res.status(400).json({ error: "tag with this name already exists" })
             return
         }
 

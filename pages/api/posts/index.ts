@@ -36,19 +36,27 @@ function postsHandler(
         })
     }
 
-    function postPost(user: User) {
-        const { title, content } = req.body
-        if (!title || !content) {
-            res.status(400).json({ error: 'title and content are required' })
+    async function postPost(user: User) {
+        const { title, content, categoryId } = req.body
+
+        if (!title || !content || !categoryId) {
+            res.status(400).json({ error: 'title, content and categoryId are required' })
         }
+
+        if (await prisma.post.findUnique({ where: { title } }) !== null) {
+            res.status(400).json({ error: "post with this title already exists" })
+            return
+        }
+
         prisma.post.create({
             data: {
                 title,
                 content,
                 authorId: user.id,
-                score: 0
+                score: 0,
+                categoryId
             }
-        }).then((post: Post) => {
+        }).then((post: Partial<Post>) => {
             res.status(201).json({ post: new Post(post).toDto() })
         })
     }

@@ -47,7 +47,7 @@ export class Post implements PostData, HasDto<PostDto>, IsModel {
                 id: post.id,
                 title: post.title,
                 content: post.content,
-                myScore: votes.find(v => v.userId === user.id)?.score ?? 0
+                myScore: votes.find(v => v.postId === post.id)?.score ?? 0
             }
 
             return postAuthDto

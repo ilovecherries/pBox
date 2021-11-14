@@ -38,7 +38,7 @@ export class ModelUtil {
                     Promise.reject(new Error(`${ctor.toString()} not found`))
                 }
 
-                new ctor(model as T)
+                return new ctor(model as T)
             })
     }
 }

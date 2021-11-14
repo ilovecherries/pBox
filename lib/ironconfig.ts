@@ -22,10 +22,5 @@ export async function sessionWrapper(session: IronSession): Promise<User> {
         Promise.reject(new Error('Not logged in'))
     }
 
-    try {
-        const user = await ModelUtil.getOne(User, prisma.user, userId as number)
-        return Promise.resolve(user)
-    } catch {
-        return Promise.reject(new Error('User not found'))
-    }
+    return ModelUtil.getOne(User, prisma.user, userId as number)
 }
