@@ -36,7 +36,7 @@ function tagsHandler(
     }
 
     function getTags() {
-        ModelUtil.getList(Tag, prisma.tag).then((tags: Tag[]) => {
+        ModelUtil.getList(Tag).then((tags: Tag[]) => {
             res.status(200).json({ tags })
         })
     }

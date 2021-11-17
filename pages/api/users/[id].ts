@@ -17,11 +17,6 @@ async function userHandler(
     res: NextApiResponse<StatusData>
 ) {
     sessionWrapper(req.session).then(async authUser => {
-        if (authUser.operator === false) {
-            res.status(403).json({error: "User is not an operator"})
-            return
-        }
-
         const id = parseInt(req.query.id as string)
 
         if (!id) {
@@ -29,10 +24,15 @@ async function userHandler(
             return
         }
 
+        if (authUser.operator === false) {
+            res.status(403).json({error: "User is not an operator"})
+            return
+        }
+
         let user: User
 
         try {
-            user = await ModelUtil.getOne(User, prisma.user, id)
+            user = await ModelUtil.getUnique(User, id)
         } catch {
             res.status(404).json({ error: "User not found" })
             return
@@ -56,21 +56,20 @@ async function userHandler(
             res.status(200).json({user: user.toDto()})
         }
 
-        function putUser() {
+        async function putUser() {
             const { username, operator } = req.body
-            prisma.user.update({
-                where: {id},
-                data: {
-                    username: username ?? user.username, 
-                    operator: operator ?? user.operator
-                }
-            }).then((user: Partial<User> | null) => {
-                if (user === null) {
-                    res.status(404).json({error: "User not found"})
-                    return
-                }
 
-                res.status(200).json({user: new User(user).toDto()})
+            if (username !== undefined && username !== user.username &&
+                await prisma.user.findUnique({ where: { username: user.username } }) !== null) {
+                    res.status(400).json({ error: "User with that username already exists" })
+                    return
+            }
+
+            user.edit({
+                username: username ?? user.username, 
+                operator: operator ?? user.operator
+            }).then((user) => {
+                res.status(200).json({user: user.toDto()})
             })
         }
 

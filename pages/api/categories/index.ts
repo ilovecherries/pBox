@@ -4,14 +4,14 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { ironConfig, sessionWrapper } from "../../../lib/ironconfig";
 import prisma from "../../../lib/prisma";
 import { ModelUtil } from "../../../views/ModelView";
-import { Category } from "../../../views/Category";
+import { Category, CategoryDto } from "../../../views/Category";
 
 export default withIronSessionApiRoute(tagsHandler, ironConfig)
 
 type StatusData = {
     error?: string,
-    categories?: Category[],
-    category?: Category
+    categories?: CategoryDto[],
+    category?: CategoryDto
 }
 
 function tagsHandler(
@@ -38,8 +38,8 @@ function tagsHandler(
     }
 
     function getCategories() {
-        ModelUtil.getList(Category, prisma.category).then((categories: Category[]) => {
-            res.status(200).json({ categories })
+        ModelUtil.getList(Category).then((categories: Category[]) => {
+            res.status(201).json({ categories: categories.map(c => c.toDto()) })
         })
     }
 
@@ -56,13 +56,7 @@ function tagsHandler(
             return
         }
 
-        prisma.category.create({
-            data: {
-                name: req.body.name,
-            }
-        }).then((category: Partial<Category>) => {
-            const categoryD = new Category(category)
-            res.status(200).json({ category: categoryD })
-        })
+        const category = await Category.create({ name })
+        res.status(200).json({ category: category.toDto() })
     }
 }

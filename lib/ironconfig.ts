@@ -19,8 +19,8 @@ export async function sessionWrapper(session: IronSession): Promise<User> {
     const { userId } = session
 
     if (userId === undefined) {
-        Promise.reject(new Error('Not logged in'))
+        throw new Error('Not logged in')
     }
 
-    return ModelUtil.getOne(User, prisma.user, userId as number)
+    return ModelUtil.getUnique(User, userId as number)
 }

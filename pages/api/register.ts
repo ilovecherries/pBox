@@ -7,7 +7,7 @@ type StatusData = {
     user?: UserDto
 }
 
-export default function registerHandler(
+export default async function registerHandler(
     req: NextApiRequest, 
     res: NextApiResponse<StatusData>
 ) {
@@ -24,10 +24,12 @@ export default function registerHandler(
         return;
     }
 
-    register(username, password)
-    .then((user: User) => {
-        const dto = user.toDto();
-        res.status(201).send({user: dto});
-    })
-    .catch((err: Error) => {res.status(400).send({error: err.message})});
+    try {
+        const user = await register(username, password);
+
+        res.status(201).send({user: user.toDto()});
+    }
+    catch (e: any) {
+        res.status(400).send({error: e.message})
+    }
 }

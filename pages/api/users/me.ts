@@ -1,7 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { ironConfig, sessionWrapper } from '../../../lib/ironconfig'
 import { withIronSessionApiRoute } from "iron-session/next";
-import prisma from '../../../lib/prisma'
 import { User, UserDto } from '../../../views/User'
 
 export default withIronSessionApiRoute(userHandler, ironConfig)
@@ -15,47 +14,53 @@ async function userHandler(
     req: NextApiRequest,
     res: NextApiResponse<StatusData>
 ) {
-    sessionWrapper(req.session).then(user => {
+    let user: User
+    try {
+        user = await sessionWrapper(req.session)
+
         switch (req.method) {
             case 'GET':
                 getUser()
                 break
-            case 'POST':
-                putUser()
+            case 'PUT':
+                await putUser()
                 break
             case 'DELETE':
-                deleteUser()
+                await deleteUser()
                 break
             default:
                 res.status(405).json({ error: "Method not allowed" })
         }
+    }
+    catch (e: any) {
+        res.status(401).json({ error: e.message })
+    }
 
-        function getUser() {
-            res.status(200).json({ user: user.toDto() })
-        }
+    function getUser() {
+        res.status(200).json({ user: user.toDto() })
+    }
 
-        function putUser() {
-            const { username } = req.body
-            prisma.user.update({
-                where: {id: user.id},
-                data: {
-                    username: username ?? user.username, 
-                }
-            }).then((user: Partial<User> | null) => {
-                if (user === null) {
-                    res.status(404).json({ error: "User not found" })
-                    return
-                }
-
-                res.status(200).json({ user: new User(user).toDto() })
+    async function putUser() {
+        const { username } = req.body
+        try {
+            const updatedUser = await user.edit({
+                username: username ?? user.username, 
             })
-        }
 
-        function deleteUser() {
-            user.delete().then(() => {
-                res.status(201).json({ user: user.toDto() })
-            });
+            res.status(200).json({ user: updatedUser.toDto() })
+        } catch (e) {
+            console.error(e)
+            res.status(500).json({ error: "Internal server error" })
         }
-    })
-    .catch(e => res.status(401).json({ error: e.message }))
+    }
+
+    async function deleteUser() {
+        try {
+            await user.delete()
+            res.status(201).end()
+        } catch (e) {
+            console.error(e)
+            res.status(500).json({ error: "Internal server error" })
+        }
+    }
 }

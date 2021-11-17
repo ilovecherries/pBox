@@ -11,7 +11,7 @@ type StatusData = {
     user?: UserDto
 }
 
-function loginHandler(
+async function loginHandler(
     req: any, 
     res: NextApiResponse<StatusData>
 ) {
@@ -27,8 +27,9 @@ function loginHandler(
         return
     }
 
-    login(username, password)
-    .then(async (user: User | undefined) => {
+    try {
+        const user = await login(username, password)
+
         if (user === undefined) {
             res.status(401).json({ error: 'invalid username or password' })
         }
@@ -36,7 +37,10 @@ function loginHandler(
         req.session.userId = user!.id;
         await req.session.save();
         const dto = user!.toDto()
+
         res.status(200).json({ user: dto })
-    })
-    .catch((err: Error) => {res.status(400).json({ error: err.message })});
+    }
+    catch (err: any) {
+        res.status(400).json({ error: err.message })
+    }
 }

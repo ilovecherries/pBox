@@ -1,6 +1,12 @@
 import { resolve } from "path/posix"
 import prisma from "../lib/prisma"
-import { HasDto } from "./ModelView"
+import { HasDto, Model, ModelUtil } from "./ModelView"
+
+export interface UserFields {
+    username: string
+    operator: boolean
+    password: string
+}
 
 export interface UserDto {
     id: number
@@ -8,15 +14,18 @@ export interface UserDto {
     operator: boolean
 }
 
-export class User implements UserDto, HasDto<UserDto> {
+export class User extends Model<UserFields, UserDto> implements UserDto {
+    readonly prismaDelegate = prisma.user
+
     public id: number = -1
     public username: string = ""
     public operator: boolean = false
     public hashed_password: string = ""
     public salt: string = ""
 
-    public constructor(userPartial: Partial<User> = {}) {
-        Object.assign(this, userPartial);
+    public constructor(fields: Partial<User> = {}) {
+        super()
+        Object.assign(this, fields)
     }
 
     toDto(): UserDto {
@@ -24,18 +33,14 @@ export class User implements UserDto, HasDto<UserDto> {
             id: this.id,
             username: this.username,
             operator: this.operator
-        };
+        }
+    }
+
+    edit(fields: Partial<UserFields>): Promise<User> {
+        return ModelUtil.edit(User, this.id, fields)
     }
 
     delete(): Promise<void> {
-        // when we delete the user, we also want to delete the
-        // user's posts and votes
-        return prisma.post.deleteMany({where: {authorId: this.id}}).then(() => {
-            prisma.vote.deleteMany({where: {userId: this.id}}).then(() => {
-                prisma.user.delete({where: {id: this.id}}).then(() => {
-                    Promise.resolve()
-                })
-            })
-        })
+        return ModelUtil.delete(User, this.id)
     }
 }

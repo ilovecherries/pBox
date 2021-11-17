@@ -26,6 +26,7 @@ model Category {
 model Tag {
     id                  Int                   @id @default(autoincrement())
     name                String                @unique
+    color               String
     PostTagRelationship PostTagRelationship[]
 }
 
@@ -33,21 +34,21 @@ model Post {
     id                  Int                   @id @default(autoincrement())
     title               String                @unique
     content             String
-    author              User                  @relation(fields: [authorId], references: [id])
+    author              User                  @relation(fields: [authorId], references: [id], onDelete: Cascade)
     authorId            Int
     createDate          DateTime              @default(now())
     editDate            DateTime              @default(now())
     category            Category              @relation(fields: [categoryId], references: [id])
     categoryId          Int
     votes               Vote[]
-    score               Int
+    score               Int                   @default(0)
     PostTagRelationship PostTagRelationship[]
 }
 
 model Vote {
-    user   User @relation(fields: [userId], references: [id])
+    user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
     userId Int
-    post   Post @relation(fields: [postId], references: [id])
+    post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
     postId Int
     score  Int
 
@@ -56,9 +57,9 @@ model Vote {
 }
 
 model PostTagRelationship {
-    post   Post @relation(fields: [postId], references: [id])
+    post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
     postId Int
-    tag    Tag  @relation(fields: [tagId], references: [id])
+    tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
     tagId  Int
 
     @@id([postId, tagId])
