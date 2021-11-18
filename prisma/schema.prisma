@@ -63,4 +63,5 @@ model PostTagRelationship {
     tagId  Int
 
     @@id([postId, tagId])
+    @@unique([postId, tagId])
 }

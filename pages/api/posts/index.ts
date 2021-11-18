@@ -37,10 +37,13 @@ async function postsHandler(
         let posts: Post[] = []
         try {
             const user = await sessionWrapper(req.session)
-            posts = await ModelUtil.getList(Post, { include: { votes: true, PostTagRelationship: true, author: true, category: true } })
+            console.log('ww')
+            posts = await ModelUtil.getList(Post, { include: { votes: true, author: true, category: true } })
+            posts = await Promise.all(posts.map(async post => { await post.loadTags(); return post }))
             res.status(200).json({ posts: posts.map(p => p.toAuthDto(user)) })
         } catch (e) {
-            posts = await ModelUtil.getList(Post, { include: { category: true }}) 
+            posts = await ModelUtil.getList(Post, { include: { category: true } })
+            posts = await Promise.all(posts.map(async post => { await post.loadTags(); return post }))
             res.status(200).json({ posts: posts.map(p => p.toDto()) })
         }
     }
@@ -58,8 +61,10 @@ async function postsHandler(
             content,
             authorId: user.id,
             categoryId,
-            tags
-        }).then((post: Post) => {
+            tags,
+            score: 0
+        }).then(async (post: Post) => {
+            await post.loadTags()
             res.status(201).json({ post: post.toAuthDto(user) })
         }).catch((e: Error) => {
             res.status(400).json({ error: e.message })

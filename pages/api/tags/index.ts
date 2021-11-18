@@ -9,20 +9,20 @@ export default withIronSessionApiRoute(tagsHandler, ironConfig)
 
 type StatusData = {
     error?: string,
-    tags?: Tag[],
-    tag?: Tag
+    tags?: TagDto[],
+    tag?: TagDto
 }
 
-function tagsHandler(
+async function tagsHandler(
     req: NextApiRequest,
     res: NextApiResponse<StatusData>
 ) {
     switch (req.method) {
         case "GET":
-            getTags()
+            await getTags()
             break
         case 'POST':
-            sessionWrapper(req.session).then(user => {
+            await sessionWrapper(req.session).then(user => {
                 if (user.operator === false) {
                     res.status(401).json({ error: 'Must be an operator to create tags' })
                     return
@@ -31,13 +31,14 @@ function tagsHandler(
                 postTag()
             })
             .catch(e => res.status(401).json({ error: e.message }))
+            break
         default:
             res.status(405).end()
     }
 
-    function getTags() {
-        ModelUtil.getList(Tag).then((tags: Tag[]) => {
-            res.status(200).json({ tags })
+    async function getTags() {
+        await ModelUtil.getList(Tag).then((tags: Tag[]) => {
+            res.status(200).json({ tags: tags.map(t => t.toDto()) })
         })
     }
 
@@ -49,19 +50,8 @@ function tagsHandler(
             return
         }
 
-        if (await prisma.tag.findUnique({ where: { name } }) !== null) {
-            res.status(400).json({ error: "tag with this name already exists" })
-            return
-        }
-
-        prisma.tag.create({
-            data: {
-                name: req.body.name,
-                color: req.body.color,
-            }
-        }).then((tag: Partial<Tag>) => {
-            const tagD = new Tag(tag)
-            res.status(200).json({ tag: tagD })
-        })
+        await Tag.create({ name, color }).then(tag => {
+            res.status(200).json({ tag: tag.toDto() })
+        }).catch(e => res.status(400).json({ error: e.message }))
     }
 }

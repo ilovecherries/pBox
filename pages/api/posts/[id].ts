@@ -56,6 +56,7 @@ async function postHandler(
                 where: {id}, 
                 include: { author: true, votes: true, PostTagRelationship: true, category: true }
             })
+            await post.loadTags()
             res.status(200).json({ post: post.toAuthDto(user) })
         }
         catch (e) {
@@ -63,6 +64,7 @@ async function postHandler(
                 where: {id}, 
                 include: { category: true, PostTagRelationship: true }
             })
+            await post.loadTags()
             res.status(200).json({ post: post.toDto() })
         }
     }
@@ -71,13 +73,14 @@ async function postHandler(
         await ModelUtil.getUnique(Post, {
             where: {id},
             include: { author: true, votes: true, PostTagRelationship: true, category: true }
-        }).then(post => {
+        }).then(async post => {
             if (post.author!.id !== user.id && !user.operator) {
                 res.status(403).json({ error: "Not authorized" })
             }
             let { title, content, categoryId, tags } = req.body
-            post.edit({ title, content, categoryId, tags })
-            .then(post => {
+            await post.edit({ title, content, categoryId, tags })
+            .then(async post => {
+                await post.loadTags()
                 res.status(200).json({ post: post.toDto() })
             })
             .catch(e => res.status(400).json({ error: e.message }))

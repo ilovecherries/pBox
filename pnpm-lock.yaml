@@ -8,6 +8,8 @@ specifiers:
   '@types/react': 17.0.34
   babel-jest: ^27.3.1
   bcrypt: ^5.0.1
+  bootstrap: ^5.1.3
+  bootstrap-icons: ^1.7.1
   client: ^0.0.1
   eslint: 7.32.0
   eslint-config-next: 12.0.3
@@ -24,6 +26,8 @@ specifiers:
 dependencies:
   '@prisma/client': 3.4.2_prisma@3.4.2
   bcrypt: 5.0.1
+  bootstrap: 5.1.3
+  bootstrap-icons: 1.7.1
   client: 0.0.1
   iron-session: 6.0.2_next@12.0.3
   next: 12.0.3_react-dom@17.0.2+react@17.0.2
@@ -1751,6 +1755,17 @@ packages:
     deprecated: This version has been deprecated in accordance with the hapi support policy (hapi.im/support). Please upgrade to the latest version to get the best features, bug fixes, and security patches. If you are unable to upgrade at this time, paid support is available for older versions (hapi.im/commercial).
     dependencies:
       hoek: 0.7.6
+    dev: false
+
+  /bootstrap-icons/1.7.1:
+    resolution: {integrity: sha512-Hkuoo0qrWegA9cdzwS68YPSOLf7d42gqnMzT1tIy/SWvnxnI+Y5PFvK2qIbM/L7knH8SdC8FPgjA+bktzmGcAw==}
+    engines: {node: '>=10'}
+    dev: false
+
+  /bootstrap/5.1.3:
+    resolution: {integrity: sha512-fcQztozJ8jToQWXxVuEyXWW+dSo8AiXWKwiSSrKWsRB/Qt+Ewwza+JWoLKiTuQLaEPhdNAJ7+Dosc9DOIqNy7Q==}
+    peerDependencies:
+      '@popperjs/core': ^2.10.2
     dev: false
 
   /brace-expansion/1.1.11:

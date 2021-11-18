@@ -12,6 +12,8 @@ export interface TagDto extends TagFields {
 }
 
 export class Tag extends Model<TagFields, TagDto> implements TagDto {
+    readonly prismaDelegate = prisma.tag
+
     public id: number = 0
     public name: string = ''
     public color: string = ''
@@ -29,11 +31,22 @@ export class Tag extends Model<TagFields, TagDto> implements TagDto {
         }
     }
 
-    public static create(fields: TagFields): Promise<Tag> {
+    static async verifyFields(fields: Partial<TagFields>) {
+        if (fields.name !== undefined) { 
+            const post = await prisma.tag.findUnique({ where: { name: fields.name }})
+            if (post !== null) {
+                throw new Error("tag with this name already exists")
+            }
+        }
+    }
+
+    public static async create(fields: TagFields): Promise<Tag> {
+        await Tag.verifyFields(fields)
         return ModelUtil.create(Tag, fields)
     }
 
-    edit(fields: Partial<TagFields>): Promise<Tag> {
+    async edit(fields: Partial<TagFields>): Promise<Tag> {
+        await Tag.verifyFields(fields)
         return ModelUtil.edit(Tag, fields, this.id)
     }
 

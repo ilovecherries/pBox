@@ -2,7 +2,7 @@ import prisma from "../../../lib/prisma"
 import { withIronSessionApiRoute } from "iron-session/next"
 import { NextApiRequest, NextApiResponse } from "next"
 import { ironConfig, sessionWrapper } from "../../../lib/ironconfig"
-import { Tag } from '../../../views/Tag'
+import { Tag, TagDto } from '../../../views/Tag'
 import { ModelUtil } from "../../../views/ModelView"
 
 export default withIronSessionApiRoute(tagHandler, ironConfig)
@@ -24,11 +24,11 @@ async function tagHandler(
     }
 
     if (req.method === "GET") {
-        getTag()
+        await getTag()
         return
     }
 
-    sessionWrapper(req.session).then(user => {
+    await sessionWrapper(req.session).then(async user => {
         if (user.operator === false) {
             res.status(403).json({ error: "Not an operator" })
             return
@@ -36,10 +36,10 @@ async function tagHandler(
 
         switch (req.method) {
             case 'PUT':
-                putTag()
+                await putTag()
                 break
             case "DELETE":
-                deleteTag()
+                await deleteTag()
                 break
             default:
                 res.status(405).json({ error: "Method not allowed" })
@@ -48,30 +48,23 @@ async function tagHandler(
     })
     .catch(e => res.status(401).json({ error: e.message }))
 
-    function getTag() {
-        ModelUtil.getUnique(Tag, id).then((tag: Tag) => {
+    async function getTag() {
+        await ModelUtil.getUnique(Tag, id).then((tag: Tag) => {
             res.status(200).json({ tag: tag.toDto() })
         })
     }
 
-    function putTag() {
-        ModelUtil.getUnique(Tag, id).then(async (tag: Tag) => {
-            const name: string = req.body.name
-            const color: string = req.body.color
-
-            if (name !== undefined && name !== tag.name &&
-                await prisma.tag.findUnique({ where: { name } }) !== null) {
-                    res.status(400).json({ error: "Tag with that name already exists" })
-                    return
-            }
+    async function putTag() {
+        await ModelUtil.getUnique(Tag, id).then(async (tag: Tag) => {
+            const {name, color} = req.body
 
             const updatedTag = await tag.edit({ name, color })
             res.status(200).json({ tag: updatedTag.toDto() })
         })
     }
 
-    function deleteTag() {
-        ModelUtil.getUnique(Tag, id).then((tag: Tag) => {
+    async function deleteTag() {
+        await ModelUtil.getUnique(Tag, id).then((tag: Tag) => {
             tag.delete().then(() => {
                 res.status(201).json({ tag: tag.toDto() })
             })

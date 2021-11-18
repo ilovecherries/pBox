@@ -43,15 +43,17 @@ export class ModelUtil {
 
     public static create<V, U, T extends Model<U, V>>(
         ctor: new (p: Partial<T>) => T,
-        data: any
+        data: any,
+        options: any = {}
     ): Promise<T> {
         const v = new ctor({})
 
         if (v.prismaDelegate.create === undefined) {
             throw new Error('v.prismaDelegate needs to be a Prisma delegate')
         }
+        Object.assign(options, {data})
 
-        return v.prismaDelegate.create({ data })
+        return v.prismaDelegate.create(options)
             .then((model: Partial<T>) => new ctor(model))
     }
 

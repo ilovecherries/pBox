@@ -39,21 +39,22 @@ export class Post extends Model<PostFields, PostDto> {
     categoryId: number = 0
     content: string = ''
     score: number = 0
-    postTagRelationships?: PostTagRelationship[]
+    PostTagRelationship?: PostTagRelationship[]
     votes?: Vote[]
     author?: User
     category?: Category
+    private _tags?: Tag[]
 
     get tags(): Tag[] {
-        return this.postTagRelationships?.map(x => new Tag(x.tag)) ?? []
+        return this.PostTagRelationship?.map(x => new Tag(x.tag)) ?? []
     }
 
     constructor(fields: Partial<Post>) {
         super()
         Object.assign(this, fields)
 
-        if (this.postTagRelationships !== undefined) {
-            this.postTagRelationships = this.postTagRelationships.map(
+        if (this.PostTagRelationship !== undefined) {
+            this.PostTagRelationship = this.PostTagRelationship.map(
                 (relationship) => new PostTagRelationship(relationship)
             )
         }
@@ -72,6 +73,27 @@ export class Post extends Model<PostFields, PostDto> {
             this.category = new Category(this.category)
         }
     }
+
+    getTags(): Tag[] {
+        if (this._tags === undefined) {
+            throw new Error("tags not loaded. run loadsTags before getting tags")
+        }
+        return this._tags
+    }
+
+    async loadTags(): Promise<void> {
+        // if (this.PostTagRelationship -== undefined) {
+        //     throw new Error("post tag relationships aren't in this post view")
+        // }
+        const relationships: PostTagRelationship[] = await ModelUtil.getList(PostTagRelationship, {
+            where: {
+                postId: this.id,
+            },
+            include: { tag: true }
+        })
+        this._tags = relationships.map(x => new Tag(x.tag))
+    }
+
 
     static async verifyFields(fields: Partial<PostFields>) {
         if (fields.title !== undefined) { 
@@ -115,12 +137,13 @@ export class Post extends Model<PostFields, PostDto> {
             score: fields.score
         }
         const post = await ModelUtil.create(Post, data);
-        tags.map(async (tagId) => {
-            await PostTagRelationship.create({
-                postId: post.id,
-                tagId
+        await Promise.all(tags.map(async (tagId) => {
+            await ModelUtil.create(PostTagRelationship,{
+                post: {connect: {id: post.id}},
+                tag: {connect: {id: tagId}}
             });
-        });
+        }));
+        await post.loadTags()
         return post;
     }
 
@@ -144,14 +167,19 @@ export class Post extends Model<PostFields, PostDto> {
         const post = await ModelUtil.edit(Post, data, this.id)
 
         if (tags !== undefined) {
-            await ModelUtil.deleteMany(PostTagRelationship, { postId: this.id })
-            tags.map(async tagId => {
-                await PostTagRelationship.create({
-                    postId: post.id,
-                    tagId
-                })
+            await ModelUtil.deleteMany(PostTagRelationship, { 
+                where: {
+                    postId: this.id
+                }
             })
+            await Promise.all(tags.map(async tagId => 
+                await ModelUtil.create(PostTagRelationship,{
+                    post: {connect: {id: post.id}},
+                    tag: {connect: {id: tagId}}
+                })
+            ))
         }
+        await post.loadTags()
         return post
     }
 
@@ -167,7 +195,9 @@ export class Post extends Model<PostFields, PostDto> {
             score: this.score
         }
 
-        dto.tags = this.tags.map(x => x.toDto())
+        dto.tags = this.getTags().map(x => x.toDto())
+        console.log(dto.tags)
+
         dto.author = this.author?.toDto()
         dto.category = this.category?.toDto()
 
