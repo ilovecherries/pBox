@@ -1,7 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { withIronSessionApiRoute } from "iron-session/next";
 import { ironConfig, sessionWrapper } from "../../../../lib/ironconfig";
-import { ModelUtil } from "../../../../views/ModelView"
 import { Post } from "../../../../views/Post"
 import { User } from "../../../../views/User";
 import { VoteScore } from "../../../../views/Vote";
@@ -28,7 +27,7 @@ async function voteHandler(
     let post: Post
     
     try {
-        post = await ModelUtil.getUnique(Post, {
+        post = await Post.getUnique({
             where: { id: id },
             include: { votes: true }
         })
@@ -50,7 +49,6 @@ async function voteHandler(
             await getVote()
         })
     } catch (e) {
-        console.log(e)
         res.status(404).json({ error: "Post not found" })
     }
 

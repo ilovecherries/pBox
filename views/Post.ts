@@ -94,6 +94,25 @@ export class Post extends Model<PostFields, PostDto> {
         this._tags = relationships.map(x => new Tag(x.tag))
     }
 
+    static async getUnique(options: any): Promise<Post> {
+        const post = await ModelUtil.getUnique(Post, options)
+        if (post.PostTagRelationship !== undefined) {
+            await post.loadTags()
+        }
+        return post
+    }
+
+    static async getList(options: any): Promise<Post[]> {
+        const posts = await ModelUtil.getList(Post, options)
+        const loadedPosts = await Promise.all(posts.map(async (post: Post) => {
+            if (post.PostTagRelationship !== undefined) {
+                await post.loadTags()
+            }
+            return post
+        }))
+        return loadedPosts
+    }
+
 
     static async verifyFields(fields: Partial<PostFields>) {
         if (fields.title !== undefined) { 

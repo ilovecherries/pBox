@@ -1,7 +1,6 @@
 import { withIronSessionApiRoute } from "iron-session/next";
 import { NextApiRequest, NextApiResponse } from "next"
 import { ironConfig, sessionWrapper } from "../../../lib/ironconfig"
-import { ModelUtil } from "../../../views/ModelView"
 import { Post, PostAuthDto, PostDto } from "../../../views/Post"
 import { User } from "../../../views/User";
 
@@ -52,25 +51,23 @@ async function postHandler(
     async function getPost() {
         try {
             const user = await sessionWrapper(req.session)
-            const post = await ModelUtil.getUnique(Post, { 
+            const post = await Post.getUnique({ 
                 where: {id}, 
                 include: { author: true, votes: true, PostTagRelationship: true, category: true }
             })
-            await post.loadTags()
             res.status(200).json({ post: post.toAuthDto(user) })
         }
         catch (e) {
-            const post = await ModelUtil.getUnique(Post, { 
+            const post = await Post.getUnique({ 
                 where: {id}, 
                 include: { category: true, PostTagRelationship: true }
             })
-            await post.loadTags()
             res.status(200).json({ post: post.toDto() })
         }
     }
 
     async function putPost() {
-        await ModelUtil.getUnique(Post, {
+        await Post.getUnique( {
             where: {id},
             include: { author: true, votes: true, PostTagRelationship: true, category: true }
         }).then(async post => {
@@ -80,7 +77,6 @@ async function postHandler(
             let { title, content, categoryId, tags } = req.body
             await post.edit({ title, content, categoryId, tags })
             .then(async post => {
-                await post.loadTags()
                 res.status(200).json({ post: post.toDto() })
             })
             .catch(e => res.status(400).json({ error: e.message }))
@@ -88,7 +84,7 @@ async function postHandler(
     }
 
     async function deletePost() {
-        await ModelUtil.getUnique(Post, id).then((post: Post) => {
+        await Post.getUnique(id).then((post: Post) => {
             post.delete().then(() => {
                 res.status(200).end()
             })

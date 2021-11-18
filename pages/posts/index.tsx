@@ -29,14 +29,11 @@ interface PostsViewProps {
 }
 
 export async function getStaticProps() {
-    let posts = await ModelUtil.getList(Post, {
+    let posts = await Post.getList({
         include: { category: true, PostTagRelationship: true }
+        // include: { category: true }
     })
-    posts = await Promise.all(posts.map(async post => {
-        await post.loadTags()
-        return post
-    }))
-    console.log(posts.map(p => p.getTags()))
+    // console.log(posts)
 
     return {
         props: {
