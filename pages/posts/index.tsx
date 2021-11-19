@@ -10,7 +10,8 @@ import Button from 'react-bootstrap/Button'
 import { Badge, Form, FormGroup, FormLabel, Row } from 'react-bootstrap'
 import useSWR from 'swr'
 import { UserDto } from '../../views/User'
-import { getUser, sessionWrapper } from '../../lib/ironconfig'
+import { getUser, ironConfig, sessionWrapper } from '../../lib/ironconfig'
+import { withIronSessionSsr } from 'iron-session/next'
 
 type TagProps = {
     id: number,
@@ -33,21 +34,23 @@ interface PostsViewProps {
     posts: PostProps[]
 }
 
-export async function getServerSideProps({ req, res }) {
+export const getServerSideProps = withIronSessionSsr(async ({req, res}) =>  {
     let include: any = {
         category: true,
         PostTagRelationship: true
     }
 
     if (req.session) {
-        include.vote = true
+        include.votes = true
     }
 
     let posts = await Post.getList({
         include        // include: { category: true }
     })
 
+    console.log(req.session)
     let user = await getUser(req.session)
+    console.log(user)
 
     let postProps: PostProps[] = posts.map(p => {
         let props: PostProps = {
@@ -74,10 +77,75 @@ export async function getServerSideProps({ req, res }) {
             posts: postProps
         }
     }
-}
+}, ironConfig)
 
 interface PostEntryProps {
     post: PostProps
+}
+
+interface VoteHandlerProps {
+    postId: number,
+    score: number,
+    myScore?: number
+}
+
+function VoteHandler({ postId, score, myScore }: VoteHandlerProps) {
+    const [vote, setVote] = React.useState(myScore)
+    const baseScore = score - (myScore ?? 0)
+
+    async function sendVote(score: number) {
+        console.log('OWO', myScore)
+        if (myScore !== undefined) {
+            let body = { score }
+            await fetch(`/api/posts/votes/${postId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            }).then(() => {
+                setVote(score) 
+            }).catch(err => console.error(err))
+        }
+    }
+
+    async function removeVote() {
+        if (myScore !== undefined) {
+            await fetch(`/api/posts/votes/${postId}`, {
+                method: 'DELETE'
+            }).then(() => {
+                setVote(0)
+            }).catch(err => console.error(err))
+        }
+    }
+
+    async function onUpvoteClick() {
+        if (vote === 1) {
+            await removeVote()
+        } else {
+            await sendVote(1)
+        }
+    }
+
+    async function onDownvoteClick() {
+        if (vote === -1) {
+            await removeVote()
+        } else {
+            await sendVote(-1)
+        }
+    }
+
+    return (<>
+        <Row>
+            <Button variant={vote === 1 ? 'success' : 'outline-success'} onClick={onUpvoteClick}>+</Button>
+        </Row>
+        <Row>
+            {baseScore + (vote ?? 0)}
+        </Row>
+        <Row>
+            <Button variant={vote === -1 ? 'danger' : 'outline-danger'} onClick={onDownvoteClick}>-</Button>
+        </Row>
+    </>)
 }
 
 function PostEntry({ post }: PostEntryProps) {
@@ -100,19 +168,7 @@ function PostEntry({ post }: PostEntryProps) {
                 </Card.Text>
             </Card.Body>
             <div className="justify-content-center col-2">
-                <Row>
-                    <Button className="">
-                        +
-                    </Button>
-                </Row>
-                <Row className="justify-content-center fs-5">
-                    {post.score}
-                </Row>
-                <Row>
-                    <Button className="">
-                        -
-                    </Button>
-                </Row>
+                <VoteHandler postId={post.id} score={post.score} myScore={post.myScore} />
             </div>
         </Row>
     )
@@ -151,7 +207,7 @@ function LoginForm() {
             },
             body: JSON.stringify(data)
         }).then(res => res.json())
-        mutate()
+        window.location.reload()
     }
 
     return (
@@ -176,7 +232,7 @@ function LogoutForm() {
         await fetch('/api/logout', {
             method: 'POST'
         }).then(res => res.text())
-        mutate(null)
+        window.location.reload()
     }
 
     return (
