@@ -36,5 +36,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 
-prisma/db.sqlite
+prisma/db.sqlite*
 prisma/migrations
