@@ -7,7 +7,10 @@ import { Post, PostDto } from '../../views/Post'
 import Card from 'react-bootstrap/Card'
 import Container from 'react-bootstrap/Container'
 import Button from 'react-bootstrap/Button'
-import { Badge, Row } from 'react-bootstrap'
+import { Badge, Form, FormGroup, FormLabel, Row } from 'react-bootstrap'
+import useSWR from 'swr'
+import { UserDto } from '../../views/User'
+import { getUser, sessionWrapper } from '../../lib/ironconfig'
 
 type TagProps = {
     id: number,
@@ -21,36 +24,54 @@ type PostProps = {
     content: string,
     category: string,
     score: number,
-    tags: TagProps[]
+    tags: TagProps[],
+    myScore?: number,
+    owner?: boolean
 }
 
 interface PostsViewProps {
     posts: PostProps[]
 }
 
-export async function getStaticProps() {
+export async function getServerSideProps({ req, res }) {
+    let include: any = {
+        category: true,
+        PostTagRelationship: true
+    }
+
+    if (req.session) {
+        include.vote = true
+    }
+
     let posts = await Post.getList({
-        include: { category: true, PostTagRelationship: true }
-        // include: { category: true }
+        include        // include: { category: true }
     })
-    // console.log(posts)
+
+    let user = await getUser(req.session)
+
+    let postProps: PostProps[] = posts.map(p => {
+        let props: PostProps = {
+            id: p.id,
+            title: p.title,
+            content: p.content,
+            category: p.category!.name,
+            score: p.score,
+            tags: p.getTags().map(t => { return {
+                name: t.name,
+                color: t.color,
+                id: t.id
+            }})
+        }
+        if (user) {
+            props.myScore = p.getScore(user)
+            props.owner = p.authorId === user.id
+        }
+        return props
+    })
 
     return {
         props: {
-            posts: posts.map(p => {
-                return {
-                    id: p.id,
-                    title: p.title,
-                    content: p.content,
-                    category: p.category!.name,
-                    score: p.score,
-                    tags: p.getTags().map(t => { return {
-                        name: t.name,
-                        color: t.color,
-                        id: t.id
-                    }})
-                }
-            }),
+            posts: postProps
         }
     }
 }
@@ -97,13 +118,88 @@ function PostEntry({ post }: PostEntryProps) {
     )
 }
 
+export function useUser() {
+    const fetcher = async (...args: any[]) => {
+        const res = await fetch(...args)
+        if (!res.ok) {
+            const { error } = await res.json()
+            throw error
+        }
+        const { user } = await res.json()
+        return user
+    }
+
+    const { data: user, mutate, error } = useSWR('/api/users/me', fetcher)
+
+    return { user, mutate, error }
+}
+
+function LoginForm() {
+    const { mutate } = useUser()
+
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault()
+        const elements = event.currentTarget.elements
+        const username = (elements.namedItem('username') as HTMLInputElement).value.trim()
+        const password = (elements.namedItem('password') as HTMLInputElement).value.trim()
+        const data = { username, password }
+        console.log(data, JSON.stringify(data))
+        await fetch('/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        }).then(res => res.json())
+        mutate()
+    }
+
+    return (
+        <Form onSubmit={handleSubmit}>
+            <Form.Group controlId="formUsername">
+                <Form.Label>Username</Form.Label>
+                <Form.Control name="username" type="text"/>
+            </Form.Group>
+            <Form.Group controlId="formPassword">
+                <Form.Label>Password</Form.Label>
+                <Form.Control type="password" name="password" />
+            </Form.Group>
+            <Button type="submit">Login</Button>
+        </Form>
+    )
+}
+
+function LogoutForm() {
+    const { mutate } = useUser()
+
+    const handleClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
+        await fetch('/api/logout', {
+            method: 'POST'
+        }).then(res => res.text())
+        mutate(null)
+    }
+
+    return (
+        <Button onClick={handleClick}>Logout</Button>
+    )
+}
+
 export default function PostsView({ posts }: PostsViewProps) {
+    const { user } = useUser()
+
     return (
         <div>
             <Head>
                 <title>Posts</title>
             </Head>
             <h1>Posts</h1>
+            <Container>
+                {!user && (<LoginForm/>)}
+                {user && (<>
+                    {JSON.stringify(user)}
+                    <LogoutForm/>
+                </>)}
+            </Container>
             <Container>
                 { posts && posts.map(post => <PostEntry key={post.id} post={post} />) }
             </Container>

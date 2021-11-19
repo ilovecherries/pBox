@@ -22,12 +22,9 @@ async function postsHandler(
             await getPosts()
             break
         case 'POST':
-            try {
-                const user = await sessionWrapper(req.session)
-                postPost(user)
-            } catch (e: any) {
-                res.status(401).json({ error: e.message })
-            }
+            await sessionWrapper(req.session)
+                .then(user => postPost(user))
+                .catch((e: Error) => res.status(401).json({error: e.message}))
             break
         default:
             res.status(405).end()
@@ -35,14 +32,15 @@ async function postsHandler(
 
     async function getPosts() {
         let posts: Post[] = []
-        try {
-            const user = await sessionWrapper(req.session)
+        await sessionWrapper(req.session)
+        .then(async (user) => {
             posts = await Post.getList({ include: { votes: true, author: true, category: true, PostTagRelationship: true } })
             res.status(200).json({ posts: posts.map(p => p.toAuthDto(user)) })
-        } catch (e) {
+        })
+        .catch(async () => {
             posts = await Post.getList({ include: { category: true, PostTagRelationship: true } })
             res.status(200).json({ posts: posts.map(p => p.toDto()) })
-        }
+        })
     }
 
     async function postPost(user: User) {

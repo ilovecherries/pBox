@@ -44,7 +44,7 @@ async function userHandler(
         const { username } = req.body
         try {
             const updatedUser = await user.edit({
-                username: username ?? user.username, 
+                username, 
             })
 
             res.status(200).json({ user: updatedUser.toDto() })

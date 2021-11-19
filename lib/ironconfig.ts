@@ -2,7 +2,7 @@ import { IronSessionOptions } from "iron-session"
 import { ModelUtil } from "../views/ModelView"
 import { User } from "../views/User"
 import { IronSession } from "iron-session"
-import prisma from "./prisma"
+import useSWR from 'swr'
 
 declare module "iron-session" {
     interface IronSessionData {
@@ -23,4 +23,18 @@ export async function sessionWrapper(session: IronSession): Promise<User> {
     }
 
     return ModelUtil.getUnique(User, userId as number)
+}
+
+export async function getUser(session: IronSession): Promise<User | undefined> {
+    if (session === undefined) {
+        return undefined
+    }
+
+    const { userId } = session
+
+    if (userId === undefined) {
+        return undefined
+    }
+
+    return ModelUtil.getUnique(User, userId as number).catch(() => undefined)
 }

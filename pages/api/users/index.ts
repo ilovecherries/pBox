@@ -11,14 +11,14 @@ type StatusData = {
     users?: UserDto[]
 }
 
-function usersHandler(
+async function usersHandler(
     req: NextApiRequest,
     res: NextApiResponse<StatusData>
 ) {
     // getting the users should be an admin only action as the
     // intent is to have the users be anonymous
     if (req.method === 'GET') {
-        sessionWrapper(req.session).then(user => {
+        await sessionWrapper(req.session).then(user => {
             if (user.operator === false) {
                 res.status(403).json({ error: 'not authorized' })
                 return
