@@ -8,7 +8,7 @@ import Card from 'react-bootstrap/Card'
 import Col from 'react-bootstrap/Col'
 import Container from 'react-bootstrap/Container'
 import Button from 'react-bootstrap/Button'
-import { Badge, FloatingLabel, Form, FormGroup, FormLabel, Row } from 'react-bootstrap'
+import { Badge, ButtonGroup, FloatingLabel, Form, FormGroup, FormLabel, Row, ToggleButton, ToggleButtonGroup } from 'react-bootstrap'
 import useSWR from 'swr'
 import { UserDto } from '../../views/User'
 import { getUser, ironConfig, sessionWrapper } from '../../lib/ironconfig'
@@ -38,9 +38,16 @@ type CategoryProps = {
     name: string
 }
 
+type TagProps = {
+    id: number,
+    name: string,
+    color: string
+}
+
 interface PostsViewProps {
     posts: PostProps[],
     categories: CategoryProps[],
+    tags: TagProps[]
 }
 
 export const getServerSideProps = withIronSessionSsr(async ({req, res}) =>  {
@@ -84,7 +91,11 @@ export const getServerSideProps = withIronSessionSsr(async ({req, res}) =>  {
     return {
         props: {
             posts: postProps,
-            tags,
+            tags: tags.map(t => { return {
+                id: t.id,
+                name: t.name,
+                color: t.color
+            }}),
             categories: categories.map(c => { return {
                 id: c.id,
                 name: c.name
@@ -251,24 +262,33 @@ function LogoutForm() {
 
 type PostFormProps = {
     categories: CategoryProps[]
+    tags: TagProps[]
 }
 
-function PostForm({ categories }: PostFormProps) {
+function PostForm({ categories, tags }: PostFormProps) {
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         const elements = event.currentTarget.elements
         const title = (elements.namedItem('title') as HTMLInputElement).value.trim()
         const content = (elements.namedItem('content') as HTMLInputElement).value.trim()
         const categoryId = parseInt((elements.namedItem('category') as HTMLSelectElement).value)
-        const data = { title, content, tags: [], categoryId }
+        const tagIds = tags.map((t) => 
+            (elements.namedItem(`postFormTag${t.id}`) as HTMLInputElement).checked ? t.id : undefined
+        ).filter(x => x !== undefined)
+        const data = { title, content, tags: tagIds, categoryId }
         console.log(data, JSON.stringify(data))
-        await fetch('/api/posts', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        }).then(res => res.json())
+        try {
+            const res = await fetch('/api/posts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            console.log(await res.json())
+        } catch (e) {
+            console.error(e)
+        }
         window.location.reload()
     }
 
@@ -276,12 +296,12 @@ function PostForm({ categories }: PostFormProps) {
         <Form onSubmit={handleSubmit}>
             <Row className="g2">
                 <Col md>
-                    <FloatingLabel controlId="formTitle" label="Title">
+                    <FloatingLabel controlId="postFormTitle" label="Title">
                         <Form.Control name="title" type="text"/>
                     </FloatingLabel>
                 </Col>
                 <Col md>
-                    <FloatingLabel controlId="formCategory" label="Category">
+                    <FloatingLabel controlId="postFormCategory" label="Category">
                         <Form.Select name="category">
                             <option disabled selected>Select Category</option>
                             {categories && categories.map((c, i) => (
@@ -291,16 +311,24 @@ function PostForm({ categories }: PostFormProps) {
                     </FloatingLabel>
                 </Col>
             </Row>
-            <Form.Group controlId="formContent">
+            <Form.Group controlId="postFormContent">
                 <Form.Label>Content</Form.Label>
                 <Form.Control as="textarea" rows={10} name="content"/>
+            </Form.Group>
+            <Form.Group>
+                <Form.Label>Tags</Form.Label>
+                {tags && tags.map((t) => (<>
+                    {/* <Form.Check key={i} type="checkbox" label={t.name} name="tags" value={t.id}/> */}
+                    <input key={t.id} type="checkbox" className="btn-check" id={`postFormTag${t.id}`} autoComplete="off" />
+                    <label className="m-1 btn-sm btn btn-outline-primary" htmlFor={`postFormTag${t.id}`}>{t.name}</label>
+                </>))}
             </Form.Group>
             <Button type="submit">Submit Post</Button>
         </Form>
     )
 }
 
-export default function PostsView({ posts, categories }: PostsViewProps) {
+export default function PostsView({ posts, categories, tags }: PostsViewProps) {
     const { user } = useUser()
 
     return (
@@ -317,10 +345,10 @@ export default function PostsView({ posts, categories }: PostsViewProps) {
                 </>)}
             </Container>
             <Container>
-                <PostForm categories={categories}/>
+                <PostForm tags={tags} categories={categories}/>
             </Container>
             <Container>
-                { posts && posts.map(post => <PostEntry key={post.id} post={post} />) }
+                { posts && posts.slice(0).reverse().map(post => <PostEntry key={post.id} post={post} />) }
             </Container>
         </div>
     )
