@@ -5,13 +5,16 @@ import { ModelUtil } from '../../views/ModelView'
 import { Post, PostDto } from '../../views/Post'
 
 import Card from 'react-bootstrap/Card'
+import Col from 'react-bootstrap/Col'
 import Container from 'react-bootstrap/Container'
 import Button from 'react-bootstrap/Button'
-import { Badge, Form, FormGroup, FormLabel, Row } from 'react-bootstrap'
+import { Badge, FloatingLabel, Form, FormGroup, FormLabel, Row } from 'react-bootstrap'
 import useSWR from 'swr'
 import { UserDto } from '../../views/User'
 import { getUser, ironConfig, sessionWrapper } from '../../lib/ironconfig'
 import { withIronSessionSsr } from 'iron-session/next'
+import { Tag } from '../../views/Tag'
+import { Category } from '../../views/Category'
 
 type TagProps = {
     id: number,
@@ -30,8 +33,14 @@ type PostProps = {
     owner?: boolean
 }
 
+type CategoryProps = {
+    id: number,
+    name: string
+}
+
 interface PostsViewProps {
-    posts: PostProps[]
+    posts: PostProps[],
+    categories: CategoryProps[],
 }
 
 export const getServerSideProps = withIronSessionSsr(async ({req, res}) =>  {
@@ -47,10 +56,10 @@ export const getServerSideProps = withIronSessionSsr(async ({req, res}) =>  {
     let posts = await Post.getList({
         include        // include: { category: true }
     })
+    let tags = await ModelUtil.getList(Tag)
+    let categories = await ModelUtil.getList(Category)
 
-    console.log(req.session)
     let user = await getUser(req.session)
-    console.log(user)
 
     let postProps: PostProps[] = posts.map(p => {
         let props: PostProps = {
@@ -74,7 +83,12 @@ export const getServerSideProps = withIronSessionSsr(async ({req, res}) =>  {
 
     return {
         props: {
-            posts: postProps
+            posts: postProps,
+            tags,
+            categories: categories.map(c => { return {
+                id: c.id,
+                name: c.name
+            }})
         }
     }
 }, ironConfig)
@@ -94,7 +108,6 @@ function VoteHandler({ postId, score, myScore }: VoteHandlerProps) {
     const baseScore = score - (myScore ?? 0)
 
     async function sendVote(score: number) {
-        console.log('OWO', myScore)
         if (myScore !== undefined) {
             let body = { score }
             await fetch(`/api/posts/votes/${postId}`, {
@@ -191,8 +204,6 @@ export function useUser() {
 }
 
 function LoginForm() {
-    const { mutate } = useUser()
-
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         const elements = event.currentTarget.elements
@@ -226,8 +237,6 @@ function LoginForm() {
 }
 
 function LogoutForm() {
-    const { mutate } = useUser()
-
     const handleClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
         await fetch('/api/logout', {
             method: 'POST'
@@ -240,7 +249,58 @@ function LogoutForm() {
     )
 }
 
-export default function PostsView({ posts }: PostsViewProps) {
+type PostFormProps = {
+    categories: CategoryProps[]
+}
+
+function PostForm({ categories }: PostFormProps) {
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault()
+        const elements = event.currentTarget.elements
+        const title = (elements.namedItem('title') as HTMLInputElement).value.trim()
+        const content = (elements.namedItem('content') as HTMLInputElement).value.trim()
+        const categoryId = parseInt((elements.namedItem('category') as HTMLSelectElement).value)
+        const data = { title, content, tags: [], categoryId }
+        console.log(data, JSON.stringify(data))
+        await fetch('/api/posts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        }).then(res => res.json())
+        window.location.reload()
+    }
+
+    return (
+        <Form onSubmit={handleSubmit}>
+            <Row className="g2">
+                <Col md>
+                    <FloatingLabel controlId="formTitle" label="Title">
+                        <Form.Control name="title" type="text"/>
+                    </FloatingLabel>
+                </Col>
+                <Col md>
+                    <FloatingLabel controlId="formCategory" label="Category">
+                        <Form.Select name="category">
+                            <option disabled selected>Select Category</option>
+                            {categories && categories.map((c, i) => (
+                                <option value={c.id} key={i}>{c.name}</option>
+                            ))}
+                        </Form.Select>
+                    </FloatingLabel>
+                </Col>
+            </Row>
+            <Form.Group controlId="formContent">
+                <Form.Label>Content</Form.Label>
+                <Form.Control as="textarea" rows={10} name="content"/>
+            </Form.Group>
+            <Button type="submit">Submit Post</Button>
+        </Form>
+    )
+}
+
+export default function PostsView({ posts, categories }: PostsViewProps) {
     const { user } = useUser()
 
     return (
@@ -255,6 +315,9 @@ export default function PostsView({ posts }: PostsViewProps) {
                     {JSON.stringify(user)}
                     <LogoutForm/>
                 </>)}
+            </Container>
+            <Container>
+                <PostForm categories={categories}/>
             </Container>
             <Container>
                 { posts && posts.map(post => <PostEntry key={post.id} post={post} />) }
