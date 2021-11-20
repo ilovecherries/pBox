@@ -22,20 +22,20 @@ type TagProps = {
     color: string
 }
 
+type CategoryProps = {
+    id: number,
+    name: string
+}
+
 type PostProps = {
     id: number,
     title: string,
     content: string,
-    category: string,
     score: number,
     tags: TagProps[],
     myScore?: number,
-    owner?: boolean
-}
-
-type CategoryProps = {
-    id: number,
-    name: string
+    owner?: boolean,
+    category: CategoryProps
 }
 
 type TagProps = {
@@ -73,7 +73,10 @@ export const getServerSideProps = withIronSessionSsr(async ({req, res}) =>  {
             id: p.id,
             title: p.title,
             content: p.content,
-            category: p.category!.name,
+            category: {
+                name: p.category!.name,
+                id: p.category!.id
+            },
             score: p.score,
             tags: p.getTags().map(t => { return {
                 name: t.name,
@@ -179,7 +182,7 @@ function PostEntry({ post }: PostEntryProps) {
                 <Card.Title>{post.title}</Card.Title>
                 <Card.Text>
                     <div className="text-secondary">
-                        {post.category}
+                        {post.category.name}
                     </div>
                     {post.content}
                     <div>
@@ -266,6 +269,7 @@ type PostFormProps = {
 }
 
 function PostForm({ categories, tags }: PostFormProps) {
+
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         const elements = event.currentTarget.elements
@@ -318,8 +322,7 @@ function PostForm({ categories, tags }: PostFormProps) {
             <Form.Group>
                 <Form.Label>Tags</Form.Label>
                 {tags && tags.map((t) => (<>
-                    {/* <Form.Check key={i} type="checkbox" label={t.name} name="tags" value={t.id}/> */}
-                    <input key={t.id} type="checkbox" className="btn-check" id={`postFormTag${t.id}`} autoComplete="off" />
+                    <input key={t.id} type="checkbox" className="btn-check" name={`postFormTag${t.id}`} id={`postFormTag${t.id}`} autoComplete="off" />
                     <label className="m-1 btn-sm btn btn-outline-primary" htmlFor={`postFormTag${t.id}`}>{t.name}</label>
                 </>))}
             </Form.Group>
@@ -330,6 +333,51 @@ function PostForm({ categories, tags }: PostFormProps) {
 
 export default function PostsView({ posts, categories, tags }: PostsViewProps) {
     const { user } = useUser()
+    const [filteredPosts, setFilteredPosts] = React.useState(posts)
+    const [categoryFilter, setCategoryFilter] = React.useState<number>(0)
+    const [tagFilters, setTagFilters] = React.useState<number[]>([])
+    const [textFilter, setTextFilter] = React.useState<string>('')
+
+    React.useEffect(() => {
+        const categoryPosts = posts
+            .filter(p => (categoryFilter > 0) ? p.category.id === categoryFilter : true)
+        const newPosts = categoryPosts.filter((p) => {
+            if (tagFilters.length === 0) {
+                return true
+            }
+            return p.tags.some((t) => tagFilters.includes(t.id))
+        })
+        const textPosts = newPosts.filter((p) => {
+            if (textFilter === '') {
+                return true
+            }
+            const f = textFilter.toLowerCase()
+            return p.title.toLowerCase().includes(f) || p.content.toLowerCase().includes(f)
+        })
+        console.log(textPosts)
+        setFilteredPosts(textPosts)
+    }, [posts, tagFilters, categoryFilter, textFilter])
+
+    const handleTagFilterUpdate = (event: React.ChangeEvent<HTMLInputElement>) => { 
+        const element = event.target
+        const tagId = parseInt(element.id.split('-')[1])
+        const checked = element.checked
+        if (checked) {
+            setTagFilters([...tagFilters, tagId])
+        } else {
+            setTagFilters(tagFilters.filter(x => x !== tagId))
+        }
+    }
+
+    const handleTextFilter = (event: React.ChangeEvent<HTMLInputElement>) => { 
+        const element = event.target
+        setTextFilter(element.value)
+    }
+
+    const handleCategoryUpdate = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        const element = event.target
+        setCategoryFilter(parseInt(element.value))
+    }
 
     return (
         <div>
@@ -345,10 +393,35 @@ export default function PostsView({ posts, categories, tags }: PostsViewProps) {
                 </>)}
             </Container>
             <Container>
-                <PostForm tags={tags} categories={categories}/>
+                <Form>
+                    <Form.Group>
+                        <Form.Label>Filter by Text</Form.Label>
+                        <Form.Control onChange={handleTextFilter} type="text" placeholder="Search input"/>
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Filter by Category</Form.Label>
+                        <Form.Select onChange={handleCategoryUpdate} name="category">
+                            <option value={0} selected></option>
+                            {categories && categories.map((c, i) => (
+                                <option value={c.id} key={i}>{c.name}</option>
+                            ))}
+                        </Form.Select>
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Filter by Tag</Form.Label>
+                        {tags && tags.map((t) => (<>
+                            {/* <Form.Check key={i} type="checkbox" label={t.name} name="tags" value={t.id}/> */}
+                            <input onChange={handleTagFilterUpdate} key={t.id} type="checkbox" className="btn-check" id={`tag-${t.id}`} autoComplete="off" />
+                            <label className="m-1 btn-sm btn btn-outline-primary" htmlFor={`tag-${t.id}`}>{t.name}</label>
+                        </>))}
+                    </Form.Group>
+                </Form>
             </Container>
+            {/* <Container>
+                <PostForm tags={tags} categories={categories}/>
+            </Container> */}
             <Container>
-                { posts && posts.slice(0).reverse().map(post => <PostEntry key={post.id} post={post} />) }
+                { filteredPosts && filteredPosts.slice(0).reverse().map(post => <PostEntry key={post.id} post={post} />) }
             </Container>
         </div>
     )
