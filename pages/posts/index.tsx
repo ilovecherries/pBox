@@ -1,14 +1,14 @@
 import Head from 'next/head'
 import React from 'react'
 import prisma from '../../lib/prisma'
-import { ModelUtil } from '../../views/ModelView'
+import { Model, ModelUtil } from '../../views/ModelView'
 import { Post, PostDto } from '../../views/Post'
 
 import Card from 'react-bootstrap/Card'
 import Col from 'react-bootstrap/Col'
 import Container from 'react-bootstrap/Container'
 import Button from 'react-bootstrap/Button'
-import { Badge, ButtonGroup, FloatingLabel, Form, FormGroup, FormLabel, Row, ToggleButton, ToggleButtonGroup } from 'react-bootstrap'
+import { Badge, ButtonGroup, FloatingLabel, Form, FormGroup, FormLabel, Modal, Row, ToggleButton, ToggleButtonGroup } from 'react-bootstrap'
 import useSWR from 'swr'
 import { UserDto } from '../../views/User'
 import { getUser, ironConfig, sessionWrapper } from '../../lib/ironconfig'
@@ -269,17 +269,18 @@ type PostFormProps = {
 }
 
 function PostForm({ categories, tags }: PostFormProps) {
+    const [show, setShow] = React.useState(false)
+    const [title, setTitle] = React.useState('')
+    const [content, setContent] = React.useState('')
+    const [category, setCategory] = React.useState(categories[0].id)
+    const [tagsSelected, setTagsSelected] = React.useState<number[]>([])
+
+    const handleClose = () => setShow(false)
+    const handleShow = () => setShow(true)
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
-        const elements = event.currentTarget.elements
-        const title = (elements.namedItem('title') as HTMLInputElement).value.trim()
-        const content = (elements.namedItem('content') as HTMLInputElement).value.trim()
-        const categoryId = parseInt((elements.namedItem('category') as HTMLSelectElement).value)
-        const tagIds = tags.map((t) => 
-            (elements.namedItem(`postFormTag${t.id}`) as HTMLInputElement).checked ? t.id : undefined
-        ).filter(x => x !== undefined)
-        const data = { title, content, tags: tagIds, categoryId }
+        const data = { title, content, tags: tagsSelected, categoryId: category }
         console.log(data, JSON.stringify(data))
         try {
             const res = await fetch('/api/posts', {
@@ -290,44 +291,82 @@ function PostForm({ categories, tags }: PostFormProps) {
                 body: JSON.stringify(data)
             })
             console.log(await res.json())
+            window.location.reload()
         } catch (e) {
             console.error(e)
         }
-        window.location.reload()
+    }
+
+    const titleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setTitle(event.target.value)
+    }
+
+    const contentChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setContent(event.target.value)
+    }
+
+    const categoryChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        setCategory(parseInt(event.target.value))
+    }
+
+    const tagChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const element = event.target
+        const tagId = parseInt(element.id.split('-')[1])
+        const checked = element.checked
+        if (checked) {
+            setTagsSelected([...tagsSelected, tagId])
+        } else {
+            setTagsSelected(tagsSelected.filter(x => x !== tagId))
+        }
     }
 
     return (
-        <Form onSubmit={handleSubmit}>
-            <Row className="g2">
-                <Col md>
-                    <FloatingLabel controlId="postFormTitle" label="Title">
-                        <Form.Control name="title" type="text"/>
-                    </FloatingLabel>
-                </Col>
-                <Col md>
-                    <FloatingLabel controlId="postFormCategory" label="Category">
+        <>
+            <Button variant="primary" onClick={handleShow}>
+                New Post
+            </Button>
+        
+            <Modal centered show={show} onHide={handleClose}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Create Post</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form.Group>
+                        <Form.Label>Category</Form.Label>
                         <Form.Select name="category">
-                            <option disabled selected>Select Category</option>
-                            {categories && categories.map((c, i) => (
-                                <option value={c.id} key={i}>{c.name}</option>
+                            <option disabled selected value={0}>Select a category</option>
+                            {categories && categories.map((c) => (
+                                <option value={c.id} key={c.id}>{c.name}</option>
                             ))}
                         </Form.Select>
-                    </FloatingLabel>
-                </Col>
-            </Row>
-            <Form.Group controlId="postFormContent">
-                <Form.Label>Content</Form.Label>
-                <Form.Control as="textarea" rows={10} name="content"/>
-            </Form.Group>
-            <Form.Group>
-                <Form.Label>Tags</Form.Label>
-                {tags && tags.map((t) => (<>
-                    <input key={t.id} type="checkbox" className="btn-check" name={`postFormTag${t.id}`} id={`postFormTag${t.id}`} autoComplete="off" />
-                    <label className="m-1 btn-sm btn btn-outline-primary" htmlFor={`postFormTag${t.id}`}>{t.name}</label>
-                </>))}
-            </Form.Group>
-            <Button type="submit">Submit Post</Button>
-        </Form>
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Title</Form.Label>
+                        <Form.Control type="text" name="title" value={title} onChange={titleChange}/>
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Content</Form.Label>
+                        <Form.Control rows={6} as="textarea" name="content" value={content} onChange={contentChange}/>
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Tags</Form.Label>
+                        {tags && tags.map((t) => (<>
+                            {/* <Form.Check key={i} type="checkbox" label={t.name} name="tags" value={t.id}/> */}
+                            <input onChange={tagChange} key={t.id} type="checkbox" className="btn-check" id={`posttag-${t.id}`} autoComplete="off" />
+                            <label className="m-1 btn-sm btn btn-outline-primary" htmlFor={`posttag-${t.id}`}>{t.name}</label>
+                        </>))}
+                    </Form.Group>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={handleClose}>
+                        Close
+                    </Button>
+                    <Button variant="primary" onClick={handleSubmit}>
+                        Create
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+        </>
     )
 }
 
@@ -417,9 +456,9 @@ export default function PostsView({ posts, categories, tags }: PostsViewProps) {
                     </Form.Group>
                 </Form>
             </Container>
-            {/* <Container>
+            <Container>
                 <PostForm tags={tags} categories={categories}/>
-            </Container> */}
+            </Container>
             <Container>
                 { filteredPosts && filteredPosts.slice(0).reverse().map(post => <PostEntry key={post.id} post={post} />) }
             </Container>
