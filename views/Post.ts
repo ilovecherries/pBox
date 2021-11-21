@@ -156,12 +156,14 @@ export class Post extends Model<PostFields, PostDto> {
             score: fields.score
         }
         const post = await ModelUtil.create(Post, data);
-        await Promise.all(tags.map(async (tagId) => {
-            await ModelUtil.create(PostTagRelationship,{
-                post: {connect: {id: post.id}},
-                tag: {connect: {id: tagId}}
-            });
-        }));
+        await prisma.$transaction(tags.map((t) =>
+            prisma.postTagRelationship.create({
+                data: {
+                    post: { connect: { id: post.id } },
+                    tag: { connect: { id: t } }
+                }
+            })
+        ))
         await post.loadTags()
         return post;
     }
@@ -191,10 +193,12 @@ export class Post extends Model<PostFields, PostDto> {
                     postId: this.id
                 }
             })
-            await Promise.all(tags.map(async tagId => 
-                await ModelUtil.create(PostTagRelationship,{
-                    post: {connect: {id: post.id}},
-                    tag: {connect: {id: tagId}}
+            await prisma.$transaction(tags.map((t) =>
+                prisma.postTagRelationship.create({
+                    data: {
+                        post: { connect: { id: post.id } },
+                        tag: { connect: { id: t } }
+                    }
                 })
             ))
         }
@@ -215,7 +219,6 @@ export class Post extends Model<PostFields, PostDto> {
         }
 
         dto.tags = this.getTags().map(x => x.toDto())
-        console.log(dto.tags)
 
         dto.author = this.author?.toDto()
         dto.category = this.category?.toDto()
@@ -251,9 +254,7 @@ export class Post extends Model<PostFields, PostDto> {
 
             return { score: scoreChange, myScore: score }
         } else if (oldVote === undefined) {
-            console.log("creating")
             const scoreChange = this.score + score
-            console.log(this.score, scoreChange, score)
             await ModelUtil.create(Vote, { 
                 postId: this.id, 
                 userId: user.id, 
@@ -262,8 +263,6 @@ export class Post extends Model<PostFields, PostDto> {
             await this.edit({ score: scoreChange })
             return { score: scoreChange, myScore: score }
         } else {
-            console.log("no change")
-            console.log(this.score, oldVote.score, score)
             return { score: this.score, myScore: score }
         }
     }

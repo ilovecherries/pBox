@@ -1,3 +1,5 @@
+import prisma from "../lib/prisma"
+
 export interface HasDto<T> {
     toDto(): T
 }
