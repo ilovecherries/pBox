@@ -8,7 +8,7 @@ import Card from 'react-bootstrap/Card'
 import Col from 'react-bootstrap/Col'
 import Container from 'react-bootstrap/Container'
 import Button from 'react-bootstrap/Button'
-import { Badge, ButtonGroup, FloatingLabel, Form, FormGroup, FormLabel, Modal, Row, ToggleButton, ToggleButtonGroup } from 'react-bootstrap'
+import { Badge, ButtonGroup, FloatingLabel, Form, FormGroup, FormLabel, Modal, Row, ToggleButton, ToggleButtonGroup, Navbar, Nav } from 'react-bootstrap'
 import useSWR from 'swr'
 import { UserDto } from '../../views/User'
 import { getUser, ironConfig, sessionWrapper } from '../../lib/ironconfig'
@@ -177,7 +177,7 @@ function VoteHandler({ postId, score, myScore }: VoteHandlerProps) {
 
 function PostEntry({ post }: PostEntryProps) {
     return (
-        <Row className="justify-content-between m-2 border">
+        <Row className="bg-white justify-content-between m-2 border">
             <Card.Body className="col-9">
                 <Card.Title>{post.title}</Card.Title>
                 <Card.Text>
@@ -370,6 +370,148 @@ function PostForm({ categories, tags }: PostFormProps) {
     )
 }
 
+function Navigation() {
+    const { user } = useUser()
+    const [usernameLogin, setUsernameLogin] = React.useState('')
+    const [passwordLogin, setPasswordLogin] = React.useState('')
+    const [usernameRegister, setUsernameRegister] = React.useState('')
+    const [passwordRegister, setPasswordRegister] = React.useState('')
+    const [showLogin, setShowLogin] = React.useState(false)
+    const [showRegister, setShowRegister] = React.useState(false)
+
+    const handleShowLogin = () => setShowLogin(true)
+    const handleHideLogin = () => setShowLogin(false)
+    const handleShowRegister = () => setShowRegister(true)
+    const handleHideRegister = () => setShowRegister(false)
+
+    const handleLogout = async () => {
+        await fetch('/api/logout', {
+            method: 'POST'
+        }).then(res => res.text())
+        window.location.reload()
+    }
+
+    const login = (username: string, password: string) => {
+        return fetch('/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
+        })
+    }
+
+    const handleLogin = async () => {
+        try {
+            const res = await login(usernameLogin, passwordLogin)
+            window.location.reload()
+        } catch (e) {
+            console.error(e)
+        }
+    }
+
+    const handleRegister = async () => {
+        try {
+            const res = await fetch('/api/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: usernameRegister,
+                    password: passwordRegister
+                })
+            })
+            await login(usernameRegister, passwordRegister)
+            window.location.reload()
+        } catch (e) {
+            console.error(e)
+        }
+    }
+
+    const usernameLoginChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setUsernameLogin(event.target.value)
+    }
+
+    const passwordLoginChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setPasswordLogin(event.target.value)
+    }
+
+    const usernameRegisterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setUsernameRegister(event.target.value)
+    }
+
+    const passwordRegisterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setPasswordRegister(event.target.value)
+    }
+
+    return (
+        <Navbar bg="dark" variant="dark">
+            <Container>
+                <Navbar.Brand>
+                    pBox
+                </Navbar.Brand>
+                <Nav className="justify-content-end">
+                    {!user && <>
+                        <Nav.Link onClick={handleShowRegister} href="#signup">Sign Up</Nav.Link>
+                        <Modal centered show={showRegister} onHide={handleHideRegister}>
+                            <Modal.Header closeButton>
+                                <Modal.Title>Register</Modal.Title>
+                            </Modal.Header>
+                            <Modal.Body>
+                                <Form.Group>
+                                    <Form.Label>Username</Form.Label>
+                                    <Form.Control type="text" name="username" value={usernameRegister} onChange={usernameRegisterChange}/>
+                                </Form.Group>
+                                <Form.Group>
+                                    <Form.Label>Password</Form.Label>
+                                    <Form.Control type="password" name="password" value={passwordRegister} onChange={passwordRegisterChange}/>
+                                </Form.Group>
+                            </Modal.Body>
+                            <Modal.Footer>
+                                <Button variant="secondary" onClick={handleHideRegister}>
+                                    Close
+                                </Button>
+                                <Button variant="primary" onClick={handleRegister}>
+                                    Register
+                                </Button>
+                            </Modal.Footer>
+                        </Modal>
+                        <Nav.Link onClick={handleShowLogin} href="#login">Log In</Nav.Link>
+                        <Modal centered show={showLogin} onHide={handleHideLogin}>
+                            <Modal.Header closeButton>
+                                <Modal.Title>Login</Modal.Title>
+                            </Modal.Header>
+                            <Modal.Body>
+                                <Form.Group>
+                                    <Form.Label>Username</Form.Label>
+                                    <Form.Control type="text" name="username" value={usernameLogin} onChange={usernameLoginChange}/>
+                                </Form.Group>
+                                <Form.Group>
+                                    <Form.Label>Password</Form.Label>
+                                    <Form.Control type="password" name="password" value={passwordLogin} onChange={passwordLoginChange}/>
+                                </Form.Group>
+                            </Modal.Body>
+                            <Modal.Footer>
+                                <Button variant="secondary" onClick={handleHideLogin}>
+                                    Close
+                                </Button>
+                                <Button variant="primary" onClick={handleLogin}>
+                                    Login
+                                </Button>
+                            </Modal.Footer>
+                        </Modal>
+                    </>}
+                    {user && <>
+                        <Navbar.Text>Signed in as: {user.username}</Navbar.Text>
+                        <Nav.Link onClick={handleLogout} href="#logout">Log Out</Nav.Link>
+                    </>}
+                </Nav>
+            </Container>
+        </Navbar>
+    )
+}
+
 export default function PostsView({ posts, categories, tags }: PostsViewProps) {
     const { user } = useUser()
     const [filteredPosts, setFilteredPosts] = React.useState(posts)
@@ -423,14 +565,7 @@ export default function PostsView({ posts, categories, tags }: PostsViewProps) {
             <Head>
                 <title>Posts</title>
             </Head>
-            <h1>Posts</h1>
-            <Container>
-                {!user && (<LoginForm/>)}
-                {user && (<>
-                    {JSON.stringify(user)}
-                    <LogoutForm/>
-                </>)}
-            </Container>
+            <Navigation />
             <Container>
                 <Form>
                     <Form.Group>
@@ -457,7 +592,7 @@ export default function PostsView({ posts, categories, tags }: PostsViewProps) {
                 </Form>
             </Container>
             <Container>
-                <PostForm tags={tags} categories={categories}/>
+                {user && <PostForm tags={tags} categories={categories}/>}
             </Container>
             <Container>
                 { filteredPosts && filteredPosts.slice(0).reverse().map(post => <PostEntry key={post.id} post={post} />) }
