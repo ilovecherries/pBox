@@ -188,19 +188,20 @@ export class Post extends Model<PostFields, PostDto> {
         const post = await ModelUtil.edit(Post, data, this.id)
 
         if (tags !== undefined) {
-            await ModelUtil.deleteMany(PostTagRelationship, { 
-                where: {
-                    postId: this.id
-                }
-            })
-            await prisma.$transaction(tags.map((t) =>
+            await prisma.$transaction([
+                prisma.postTagRelationship.deleteMany({
+                    where: {
+                        postId: this.id
+                    }
+                }),
+                ...tags.map((t) =>
                 prisma.postTagRelationship.create({
                     data: {
                         post: { connect: { id: post.id } },
                         tag: { connect: { id: t } }
                     }
                 })
-            ))
+            )])
         }
         await post.loadTags()
         return post
