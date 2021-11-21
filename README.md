@@ -1,4 +1,7 @@
 # pBox
+
+![Screenshot of pBox Usage](screenshot.png)
+
 ## requirements
 - node.js with npm
 

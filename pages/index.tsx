@@ -56,13 +56,17 @@ export const getServerSideProps = withIronSessionSsr(async ({req, res}) =>  {
         include.votes = true
     }
 
+    let user = await getUser(req.session)
+    if (user && user.operator) {
+        include.author = true
+    }
+
     let posts = await Post.getList({
         include        // include: { category: true }
     })
     let tags = await ModelUtil.getList(Tag)
     let categories = await ModelUtil.getList(Category)
 
-    let user = await getUser(req.session)
 
     let postProps: PostProps[] = posts.map(p => {
         let props: PostProps = {
@@ -267,7 +271,7 @@ function PostForm({ categories, tags }: PostFormProps) {
                 <Modal.Body>
                     <Form.Group>
                         <Form.Label>Category</Form.Label>
-                        <Form.Select defaultValue={0} name="category">
+                        <Form.Select onChange={categoryChange} defaultValue={0} name="category">
                             <option disabled value={0}>Select a category</option>
                             {categories && categories.map((c) => (
                                 <option value={c.id} key={c.id}>{c.name}</option>
@@ -284,11 +288,11 @@ function PostForm({ categories, tags }: PostFormProps) {
                     </Form.Group>
                     <Form.Group>
                         <Form.Label>Tags</Form.Label>
-                        {tags && tags.map((t) => (<>
+                        {tags && tags.map((t) => (<span key={t.id}>
                             {/* <Form.Check key={i} type="checkbox" label={t.name} name="tags" value={t.id}/> */}
-                            <input onChange={tagChange} key={t.id} type="checkbox" className="btn-check" id={`posttag-${t.id}`} autoComplete="off" />
+                            <input onChange={tagChange} type="checkbox" className="btn-check" id={`posttag-${t.id}`} autoComplete="off" />
                             <label className="m-1 btn-sm btn btn-outline-primary" htmlFor={`posttag-${t.id}`}>{t.name}</label>
-                        </>))}
+                        </span>))}
                     </Form.Group>
                 </Modal.Body>
                 <Modal.Footer>
@@ -375,11 +379,11 @@ export default function PostsView({ posts, categories, tags }: PostsViewProps) {
                     </Form.Group>
                     <Form.Group>
                         <Form.Label>Filter by Tag</Form.Label>
-                        {tags && tags.map((t) => (<>
+                        {tags && tags.map((t) => (<span key={t.id}>
                             {/* <Form.Check key={i} type="checkbox" label={t.name} name="tags" value={t.id}/> */}
-                            <input onChange={handleTagFilterUpdate} key={t.id} type="checkbox" className="btn-check" id={`tag-${t.id}`} autoComplete="off" />
+                            <input onChange={handleTagFilterUpdate} type="checkbox" className="btn-check" id={`tag-${t.id}`} autoComplete="off" />
                             <label className="m-1 btn-sm btn btn-outline-primary" htmlFor={`tag-${t.id}`}>{t.name}</label>
-                        </>))}
+                        </span>))}
                     </Form.Group>
                 </Form>
             </Container>
