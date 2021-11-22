@@ -13,7 +13,7 @@ docker pull postgres
 ```sh
 docker run --name postgres-db \
     -e POSTGRES_PASSWORD=password \
-    -p port:6657 \
+    -p port:5432 \
     -d postgres
 ```
 2. configure next.config.js to have unique ironKey
