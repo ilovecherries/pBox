@@ -38,3 +38,5 @@ yarn-error.log*
 
 prisma/db.sqlite*
 prisma/migrations
+
+.env
