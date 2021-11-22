@@ -232,29 +232,46 @@ function PostForm({ categories, tags }: PostFormProps) {
     const [content, setContent] = React.useState('')
     const [category, setCategory] = React.useState(0)
     const [tagsSelected, setTagsSelected] = React.useState<number[]>([])
+    const [error, setError] = React.useState('')
 
     const handleClose = () => setShow(false)
     const handleShow = () => setShow(true)
 
-    const handleSubmit = async () => {
-        const data = { title, content, tags: tagsSelected, categoryId: category }
-        try {
-            const res = await fetch('/api/posts', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            })
-            setTitle('')
-            setContent('')
-            setCategory(0)
-            setTagsSelected([])
-            handleClose()
-            mutate()
-        } catch (e) {
-            console.error(e)
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        const form = event.currentTarget;
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (form.checkValidity() === false) {
+            return
         }
+
+        const data = { title, content, tags: tagsSelected, categoryId: category }
+
+        if (category === 0) {
+            setError('Please select a category')
+            return
+        }
+
+        await fetch('/api/posts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        }).then(async (res) => {
+            if (res.ok) {
+                setTitle('')
+                setContent('')
+                setCategory(0)
+                setTagsSelected([])
+                handleClose()
+                mutate()
+            } else {
+                const { error } = await res.json()
+                setError(error)
+            }
+        })
     }
 
     const titleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -287,44 +304,47 @@ function PostForm({ categories, tags }: PostFormProps) {
             </Button>
         
             <Modal centered show={show} onHide={handleClose}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Create Post</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Form.Group>
-                        <Form.Label>Category</Form.Label>
-                        <Form.Select onChange={categoryChange} defaultValue={0} name="category">
-                            <option disabled value={0}>Select a category</option>
-                            {categories && categories.map((c) => (
-                                <option value={c.id} key={c.id}>{c.name}</option>
-                            ))}
-                        </Form.Select>
-                    </Form.Group>
-                    <Form.Group>
-                        <Form.Label>Title</Form.Label>
-                        <Form.Control type="text" name="title" value={title} onChange={titleChange}/>
-                    </Form.Group>
-                    <Form.Group>
-                        <Form.Label>Content</Form.Label>
-                        <Form.Control rows={6} as="textarea" name="content" value={content} onChange={contentChange}/>
-                    </Form.Group>
-                    <Form.Group>
-                        <Form.Label>Tags</Form.Label>
-                        {tags && tags.map((t) => (<span key={t.id}>
-                            {/* <Form.Check key={i} type="checkbox" label={t.name} name="tags" value={t.id}/> */}
-                            <input onChange={tagChange} type="checkbox" className="btn-check" id={`posttag-${t.id}`} autoComplete="off" />
-                            <label className="m-1 btn-sm btn btn-outline-primary" htmlFor={`posttag-${t.id}`}>{t.name}</label>
-                        </span>))}
-                    </Form.Group>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={handleClose}>
-                        Close
-                    </Button>
-                    <Button variant="primary" onClick={handleSubmit}>
-                        Create
-                    </Button>
-                </Modal.Footer>
+                <Form onSubmit={handleSubmit} method="POST">
+                    <Modal.Header closeButton>
+                        <Modal.Title>Create Post</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <Form.Group>
+                            <Form.Label>Category</Form.Label>
+                            <Form.Select defaultValue={0}onChange={categoryChange} name="category">
+                                <option disabled value={0}>Select a category</option>
+                                {categories && categories.map((c) => (
+                                    <option value={c.id} key={c.id}>{c.name}</option>
+                                ))}
+                            </Form.Select>
+                        </Form.Group>
+                        <Form.Group>
+                            <Form.Label>Title</Form.Label>
+                            <Form.Control required type="text" name="title" value={title} onChange={titleChange}/>
+                        </Form.Group>
+                        <Form.Group>
+                            <Form.Label>Content</Form.Label>
+                            <Form.Control required rows={6} as="textarea" name="content" value={content} onChange={contentChange}/>
+                        </Form.Group>
+                        <Form.Group>
+                            <Form.Label>Tags</Form.Label>
+                            {tags && tags.map((t) => (<span key={t.id}>
+                                {/* <Form.Check key={i} type="checkbox" label={t.name} name="tags" value={t.id}/> */}
+                                <input onChange={tagChange} type="checkbox" className="btn-check" id={`posttag-${t.id}`} autoComplete="off" />
+                                <label className="m-1 btn-sm btn btn-outline-primary" htmlFor={`posttag-${t.id}`}>{t.name}</label>
+                            </span>))}
+                        </Form.Group>
+                        {error && <Form.Text className="text-danger">{error}</Form.Text>}
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={handleClose}>
+                            Close
+                        </Button>
+                        <Button type="submit" variant="primary">
+                            Create
+                        </Button>
+                    </Modal.Footer>
+                </Form>
             </Modal>
         </>
     )

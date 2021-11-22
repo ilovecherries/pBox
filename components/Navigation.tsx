@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useEffect } from "react"
 import { Button, Container, Form, Modal, Nav, Navbar } from "react-bootstrap"
 import { useUser } from "./swr"
 
@@ -12,6 +12,7 @@ interface UserFormModalProps {
 
 function UserFormModal({title, submit, onSubmit, show, onHide}: UserFormModalProps) {
     const { mutate } = useUser()
+    const [error, setError] = React.useState<string>('')
     const [username, setUsername] = React.useState("")
     const [password, setPassword] = React.useState("")
 
@@ -23,36 +24,51 @@ function UserFormModal({title, submit, onSubmit, show, onHide}: UserFormModalPro
         setPassword(e.target.value)
     }
 
-    const onSubmitClick = async () => {
-        await onSubmit(username, password)
-        onHide()
-        // window.location.reload()
-        mutate()
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        const form = event.currentTarget;
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (form.checkValidity()) {
+            await onSubmit(username, password).then(async (res) => {
+                if (!res.ok) {
+                    const { error } = await res.json()
+                    setError(error)
+
+                } else {
+                    onHide()
+                    mutate()
+                }
+            }).catch(err => console.error(err))
+        }
     }
 
     return (<>
         <Modal centered show={show} onHide={onHide}>
-            <Modal.Header closeButton>
-                <Modal.Title>{title}</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-                <Form.Group>
-                    <Form.Label>Username</Form.Label>
-                    <Form.Control type="text" name="username" value={username} onChange={usernameChange}/>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label>Password</Form.Label>
-                    <Form.Control type="password" name="password" value={password} onChange={passwordChange}/>
-                </Form.Group>
-            </Modal.Body>
-            <Modal.Footer>
-                <Button variant="secondary" onClick={onHide}>
-                    Close
-                </Button>
-                <Button variant="primary" onClick={onSubmitClick}>
-                    {submit}
-                </Button>
-            </Modal.Footer>
+            <Form method="POST" onSubmit={handleSubmit}>
+                <Modal.Header closeButton>
+                    <Modal.Title>{title}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form.Group>
+                        <Form.Label>Username</Form.Label>
+                        <Form.Control type="text" name="username" placeholder="Username" value={username} onChange={usernameChange} required />
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label>Password</Form.Label>
+                        <Form.Control type="password" name="password" placeholder="Password" value={password} onChange={passwordChange} required />
+                    </Form.Group>
+                    {error && <Form.Text className="text-danger">{error}</Form.Text>}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={onHide}>
+                        Close
+                    </Button>
+                    <Button type="submit" variant="primary">
+                        {submit}
+                    </Button>
+                </Modal.Footer>
+            </Form>
         </Modal>
     </>)
 }
@@ -91,6 +107,12 @@ export default function Navigation() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ username, password })
+        }).then((res) => {
+            if (!res.ok) {
+                return res
+            } else {
+                return login(username, password)
+            }
         })
     }
 

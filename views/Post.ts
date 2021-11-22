@@ -118,21 +118,21 @@ export class Post extends Model<PostFields, PostDto> {
         if (fields.title !== undefined) { 
             const post = await prisma.post.findUnique({ where: { title: fields.title }})
             if (post !== null) {
-                throw new Error("post with this title already exists")
+                throw new Error("Post with this title already exists")
             }
         }
 
         if (fields.authorId !== undefined) {
             const user = await prisma.user.findUnique({ where: { id: fields.authorId }})
             if (user === null) {
-                throw new Error("user with this id does not exist")
+                throw new Error("User with this id does not exist")
             }
         }
 
         if (fields.categoryId !== undefined) {
             const category = await prisma.category.findUnique({ where: { id: fields.categoryId }})
             if (category === null) {
-                throw new Error("category with this id does not exist")
+                throw new Error("Category with this id does not exist")
             }
         }
 

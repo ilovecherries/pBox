@@ -16,8 +16,7 @@ export async function login(username: string, password: string): Promise<User | 
         }
     }).then((user: Partial<User> | null | undefined) => {
         if (user === null || user === undefined) {
-            Promise.reject(new Error('User not found'));
-            return;
+            throw new Error('User not found');
         }
 
         const userD = new User(user as Partial<User>);
@@ -26,7 +25,7 @@ export async function login(username: string, password: string): Promise<User | 
         return bcrypt.hash(password, userD.salt)
             .then(hash => {
                     if (hash !== user.hashed_password) {
-                        throw new Error('Invalid password');
+                        throw new Error('Incorrect password');
                     }
                     return userD!;
                 });
