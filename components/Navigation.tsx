@@ -1,6 +1,6 @@
 import React from "react"
 import { Button, Container, Form, Modal, Nav, Navbar } from "react-bootstrap"
-import useUser from "./useUser"
+import { useUser } from "./swr"
 
 interface UserFormModalProps {
     title: string,
@@ -11,6 +11,7 @@ interface UserFormModalProps {
 }
 
 function UserFormModal({title, submit, onSubmit, show, onHide}: UserFormModalProps) {
+    const { mutate } = useUser()
     const [username, setUsername] = React.useState("")
     const [password, setPassword] = React.useState("")
 
@@ -25,7 +26,8 @@ function UserFormModal({title, submit, onSubmit, show, onHide}: UserFormModalPro
     const onSubmitClick = async () => {
         await onSubmit(username, password)
         onHide()
-        window.location.reload()
+        // window.location.reload()
+        mutate()
     }
 
     return (<>
@@ -56,7 +58,7 @@ function UserFormModal({title, submit, onSubmit, show, onHide}: UserFormModalPro
 }
 
 export default function Navigation() {
-    const { user } = useUser()
+    const { user, mutate } = useUser()
     const [showLogin, setShowLogin] = React.useState(false)
     const [showRegister, setShowRegister] = React.useState(false)
 
@@ -69,7 +71,7 @@ export default function Navigation() {
         await fetch('/api/logout', {
             method: 'POST'
         }).then(res => res.text())
-        window.location.reload()
+        mutate(null)
     }
 
     const login = (username: string, password: string) => {

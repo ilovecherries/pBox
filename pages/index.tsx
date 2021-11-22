@@ -1,22 +1,20 @@
 import Head from 'next/head'
-import React from 'react'
+import React, { useEffect } from 'react'
 import prisma from '../lib/prisma'
 import { Model, ModelUtil } from '../views/ModelView'
 import { Post, PostDto } from '../views/Post'
 
 import Card from 'react-bootstrap/Card'
-import Col from 'react-bootstrap/Col'
 import Container from 'react-bootstrap/Container'
 import Button from 'react-bootstrap/Button'
 import { Badge, ButtonGroup, FloatingLabel, Form, FormGroup, FormLabel, Modal, Row, ToggleButton, ToggleButtonGroup, Navbar, Nav } from 'react-bootstrap'
-import useSWR from 'swr'
-import { UserDto } from '../views/User'
 import { getUser, ironConfig, sessionWrapper } from '../lib/ironconfig'
 import { withIronSessionSsr } from 'iron-session/next'
 import { Tag } from '../views/Tag'
 import { Category } from '../views/Category'
 import Navigation from '../components/Navigation'
-import useUser from '../components/useUser'
+import { useUser, usePosts } from '../components/swr'
+import { ArrowDown, ArrowUp, ArrowDownSquare, ArrowDownSquareFill, Trash } from 'react-bootstrap-icons'
 
 type TagProps = {
     id: number,
@@ -119,7 +117,12 @@ interface VoteHandlerProps {
 
 function VoteHandler({ postId, score, myScore }: VoteHandlerProps) {
     const [vote, setVote] = React.useState(myScore)
+    const [voteRadio, setVoteRadio] = React.useState(myScore)
     const baseScore = score - (myScore ?? 0)
+
+    useEffect(() => {
+        setVote(myScore)
+    }, [myScore])
 
     async function sendVote(score: number) {
         if (myScore !== undefined) {
@@ -162,20 +165,31 @@ function VoteHandler({ postId, score, myScore }: VoteHandlerProps) {
         }
     }
 
-    return (<>
-        <Row>
-            <Button variant={vote === 1 ? 'success' : 'outline-success'} onClick={onUpvoteClick}>+</Button>
-        </Row>
-        <Row>
+    return (<div className="m-2 float-end">
+        <Button className="p-3" variant={vote === 1 ? 'success' : 'outline-success'} onClick={onUpvoteClick}>
+            <ArrowUp />
+        </Button>
+        <div className="text-center">
             {baseScore + (vote ?? 0)}
-        </Row>
-        <Row>
-            <Button variant={vote === -1 ? 'danger' : 'outline-danger'} onClick={onDownvoteClick}>-</Button>
-        </Row>
-    </>)
+        </div>
+        <Button className="p-3" variant={vote === -1 ? 'danger' : 'outline-danger'} onClick={onDownvoteClick}>
+            <ArrowDown />
+        </Button>
+    </div>)
 }
 
 function PostEntry({ post }: PostEntryProps) {
+    const { user } = useUser()
+    const { mutate } = usePosts()
+
+    const deletePost = async () => {
+        await fetch(`/api/posts/${post.id}`, {
+            method: 'DELETE'
+        }).then(() => {
+            mutate()
+        }).catch(err => console.error(err))
+    }
+
     return (
         <Row className="bg-white justify-content-between m-2 border">
             <Card.Body className="col-9">
@@ -192,6 +206,11 @@ function PostEntry({ post }: PostEntryProps) {
                             </Badge>
                         ))}
                     </div>
+                    <div>
+                        {(post.owner || (user && user.operator)) && <Button variant="outline-danger" className="p-1" onClick={deletePost}>
+                            <Trash />
+                        </Button>}
+                    </div>
                 </Card.Text>
             </Card.Body>
             <div className="justify-content-center col-2">
@@ -207,6 +226,7 @@ type PostFormProps = {
 }
 
 function PostForm({ categories, tags }: PostFormProps) {
+    const { mutate } = usePosts()
     const [show, setShow] = React.useState(false)
     const [title, setTitle] = React.useState('')
     const [content, setContent] = React.useState('')
@@ -228,8 +248,12 @@ function PostForm({ categories, tags }: PostFormProps) {
                 },
                 body: JSON.stringify(data)
             })
-            console.log(await res.json())
-            window.location.reload()
+            setTitle('')
+            setContent('')
+            setCategory(0)
+            setTagsSelected([])
+            handleClose()
+            mutate()
         } catch (e) {
             console.error(e)
         }
@@ -309,14 +333,24 @@ function PostForm({ categories, tags }: PostFormProps) {
 }
 
 
-export default function PostsView({ posts, categories, tags }: PostsViewProps) {
+export default function PostsView({ categories, tags }: PostsViewProps) {
     const { user } = useUser()
+    const { posts, mutate } = usePosts()
     const [filteredPosts, setFilteredPosts] = React.useState(posts)
     const [categoryFilter, setCategoryFilter] = React.useState<number>(0)
     const [tagFilters, setTagFilters] = React.useState<number[]>([])
     const [textFilter, setTextFilter] = React.useState<string>('')
 
+    console.log(posts)
+
     React.useEffect(() => {
+        mutate()
+    }, [user, mutate])
+
+    React.useEffect(() => {
+        if (!posts) {
+            return
+        }
         const categoryPosts = posts
             .filter(p => (categoryFilter > 0) ? p.category.id === categoryFilter : true)
         const newPosts = categoryPosts.filter((p) => {

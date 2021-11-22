@@ -19,6 +19,7 @@ specifiers:
   prisma: ^3.5.0
   react: 17.0.2
   react-bootstrap: ^2.0.2
+  react-bootstrap-icons: ^1.6.1
   react-dom: 17.0.2
   swr: ^1.0.1
   ts-jest: ^27.0.7
@@ -34,6 +35,7 @@ dependencies:
   next: 12.0.3_react-dom@17.0.2+react@17.0.2
   react: 17.0.2
   react-bootstrap: 2.0.2_react-dom@17.0.2+react@17.0.2
+  react-bootstrap-icons: 1.6.1_react@17.0.2
   react-dom: 17.0.2_react@17.0.2
   swr: 1.0.1_react@17.0.2
 
@@ -4953,6 +4955,15 @@ packages:
       http-errors: 1.7.3
       iconv-lite: 0.4.24
       unpipe: 1.0.0
+    dev: false
+
+  /react-bootstrap-icons/1.6.1_react@17.0.2:
+    resolution: {integrity: sha512-0xoFKK0soRBx7F0+R8lHmNp7THqaCMnAKm2SfySeTTmyk2HOG6SMXuoqlEI8SPZu2ez4u3dHlrXoo5/2IGWCeA==}
+    peerDependencies:
+      react: ^16.8.6 || ^17
+    dependencies:
+      prop-types: 15.7.2
+      react: 17.0.2
     dev: false
 
   /react-bootstrap/2.0.2_react-dom@17.0.2+react@17.0.2:
