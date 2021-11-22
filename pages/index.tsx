@@ -236,10 +236,8 @@ function PostForm({ categories, tags }: PostFormProps) {
     const handleClose = () => setShow(false)
     const handleShow = () => setShow(true)
 
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault()
+    const handleSubmit = async () => {
         const data = { title, content, tags: tagsSelected, categoryId: category }
-        console.log(data, JSON.stringify(data))
         try {
             const res = await fetch('/api/posts', {
                 method: 'POST',
@@ -341,8 +339,6 @@ export default function PostsView({ categories, tags }: PostsViewProps) {
     const [tagFilters, setTagFilters] = React.useState<number[]>([])
     const [textFilter, setTextFilter] = React.useState<string>('')
 
-    console.log(posts)
-
     React.useEffect(() => {
         mutate()
     }, [user, mutate])
@@ -352,14 +348,14 @@ export default function PostsView({ categories, tags }: PostsViewProps) {
             return
         }
         const categoryPosts = posts
-            .filter(p => (categoryFilter > 0) ? p.category.id === categoryFilter : true)
-        const newPosts = categoryPosts.filter((p) => {
+            .filter((p: PostProps) => (categoryFilter > 0) ? p.category.id === categoryFilter : true)
+        const newPosts = categoryPosts.filter((p: PostProps) => {
             if (tagFilters.length === 0) {
                 return true
             }
-            return p.tags.some((t) => tagFilters.includes(t.id))
+            return p.tags.some((t: TagProps) => tagFilters.includes(t.id))
         })
-        const textPosts = newPosts.filter((p) => {
+        const textPosts = newPosts.filter((p: PostProps) => {
             if (textFilter === '') {
                 return true
             }
@@ -425,7 +421,7 @@ export default function PostsView({ categories, tags }: PostsViewProps) {
                 {user && <PostForm tags={tags} categories={categories}/>}
             </Container>
             <Container>
-                { filteredPosts && filteredPosts.slice(0).reverse().map(post => <PostEntry key={post.id} post={post} />) }
+                { filteredPosts && filteredPosts.slice(0).reverse().map((post: PostProps) => <PostEntry key={post.id} post={post} />) }
             </Container>
         </div>
     )

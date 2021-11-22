@@ -1,8 +1,8 @@
 import useSWR from "swr"
 
 export function useUser() {
-    const fetcher = async (...args: any[]) => {
-        const res = await fetch(...args)
+    const fetcher = async (url: string) => {
+        const res = await fetch(url)
         if (!res.ok) {
             const { error } = await res.json()
             throw error
@@ -17,8 +17,8 @@ export function useUser() {
 }
 
 export function usePosts() {
-    const fetcher = async (...args: any[]) => {
-        const res = await fetch(...args)
+    const fetcher = async (url: string) => {
+        const res = await fetch(url)
         if (!res.ok) {
             const { error } = await res.json()
             throw error
@@ -33,8 +33,8 @@ export function usePosts() {
 }
 
 export function useCategories() {
-    const fetcher = async (...args: any[]) => {
-        const res = await fetch(...args)
+    const fetcher = async (url: string) => {
+        const res = await fetch(url)
         if (!res.ok) {
             const { error } = await res.json()
             throw error
@@ -49,8 +49,8 @@ export function useCategories() {
 }
 
 export function useTags() {
-    const fetcher = async (...args: any[]) => {
-        const res = await fetch(...args)
+    const fetcher = async (url: string) => {
+        const res = await fetch(url)
         if (!res.ok) {
             const { error } = await res.json()
             throw error

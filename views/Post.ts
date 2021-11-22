@@ -239,9 +239,7 @@ export class Post extends Model<PostFields, PostDto> {
         const oldVote: Vote | undefined = this.votes!.find(x => x.userId === user.id)
 
         if (oldVote !== undefined && oldVote.score !== score) {
-            console.log("editing")
             const scoreChange = this.score + score * 2
-            console.log(this.score, scoreChange, oldVote.score, score)
             await ModelUtil.edit(Vote, { score }, {
                 where: {
                     userId_postId: {
@@ -251,7 +249,6 @@ export class Post extends Model<PostFields, PostDto> {
                 }
             })
             const p = await this.edit({ score: scoreChange })
-            console.log(p)
 
             return { score: scoreChange, myScore: score }
         } else if (oldVote === undefined) {

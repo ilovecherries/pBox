@@ -3,7 +3,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { ironConfig, sessionWrapper } from "../../../lib/ironconfig";
 import prisma from "../../../lib/prisma";
 import { ModelUtil } from "../../../views/ModelView";
-import { Tag } from "../../../views/Tag";
+import { Tag, TagDto } from "../../../views/Tag";
 
 export default withIronSessionApiRoute(tagsHandler, ironConfig)
 
