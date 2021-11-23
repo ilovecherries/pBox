@@ -40,3 +40,4 @@ prisma/db.sqlite*
 prisma/migrations
 
 .env
+next.config.js
