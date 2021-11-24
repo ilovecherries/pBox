@@ -1,0 +1,7 @@
+{
+    "type": "sqlite",
+    "database": "pbox.sqlite",
+    "synchronize": true,
+    "entities": ["entity/**/*.entity.ts"],
+    "migrationsRun": true
+}

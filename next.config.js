@@ -3,5 +3,8 @@ module.exports = {
   reactStrictMode: true,
   env: {
     ironKey: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+    connection: {
+      
+    },
   }
 }
