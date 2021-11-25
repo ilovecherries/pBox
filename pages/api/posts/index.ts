@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { withIronSessionApiRoute } from "iron-session/next";
 import { Post, PostAuthDto, PostDto } from "../../../views/Post"
 import { withApiAuthRequired, getSession } from '@auth0/nextjs-auth0'
+import { getUserInfo } from "../../../lib/auth0";
 
 export default withApiAuthRequired(postsHandler)
 
@@ -15,9 +16,7 @@ async function postsHandler(
     req: NextApiRequest,
     res: NextApiResponse<StatusData>
 ) {
-    const session = getSession(req, res)
-    const userId = session!.user.sub
-    const operator = false
+    const {userId, operator} = getUserInfo(req, res)
 
     switch (req.method) {
         case 'GET':

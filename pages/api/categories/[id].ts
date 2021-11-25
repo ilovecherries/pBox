@@ -3,6 +3,7 @@ import { NextApiRequest, NextApiResponse } from "next"
 import { Category, CategoryDto } from '../../../views/Category'
 import { ModelUtil } from "../../../views/ModelView"
 import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0'
+import { getUserInfo } from "../../../lib/auth0"
 
 export default withApiAuthRequired(categoryHandler)
 
@@ -27,10 +28,9 @@ async function categoryHandler(
         return
     }
 
-    const session = getSession(req, res)
-    const operator = false
+    const { operator } = getUserInfo(req, res)
     if (operator === false) {
-        res.status(401).json({ error: 'Must be an operator to create tags' })
+        res.status(401).json({ error: 'Must be an operator to manipulate tags' })
         return
     }
 

@@ -60,3 +60,15 @@ npx prisma generate
 ```sh
 npm run dev
 ``` 
+## auth0 configuration
+
+add op information to user data
+```js
+function addMetadataToTokens(user, context, callback) {
+  user.app_metadata = user.app_metadata || {};
+  user.app_metadata.roles = user.app_metadata.roles || [];
+  const namespace = 'http://localhost:3000';
+  context.idToken[namespace + '.Operator'] = user.app_metadata.op || false;
+  callback(null, user, context);
+}
+```

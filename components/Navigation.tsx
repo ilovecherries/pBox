@@ -1,6 +1,7 @@
 import React from "react"
 import { Container, Nav, Navbar } from "react-bootstrap"
 import { useUser } from '@auth0/nextjs-auth0'
+import isOp from "./user"
 
 export default function Navigation() {
     const { user } = useUser()
@@ -13,11 +14,11 @@ export default function Navigation() {
                 </Navbar.Brand>
                 <Navbar.Collapse>
                     <Nav>
-                        {/* {user && user.operator && <>
+                        {user && isOp(user) && <>
                             <Nav.Item>
                                 <Nav.Link href="/config">Configure</Nav.Link>
                             </Nav.Item>
-                        </>} */}
+                        </>}
                     </Nav>
                 </Navbar.Collapse>
                 <Navbar.Collapse className="justify-content-end">

@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { ModelUtil } from "../../../views/ModelView";
 import { Tag, TagDto } from "../../../views/Tag";
 import { getSession, withApiAuthRequired} from '@auth0/nextjs-auth0'
+import { getUserInfo } from "../../../lib/auth0";
 
 export default withApiAuthRequired(tagsHandler)
 
@@ -20,8 +21,7 @@ async function tagsHandler(
             await getTags()
             break
         case 'POST':
-            const session = getSession(req, res)
-            const operator = false
+            const { operator } = getUserInfo(req, res)
             if (operator === false) {
                 res.status(401).json({ error: 'Must be an operator to create tags' })
                 return

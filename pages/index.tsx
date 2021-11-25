@@ -1,19 +1,13 @@
 import Head from 'next/head'
 import React, { useEffect } from 'react'
-import prisma from '../lib/prisma'
-import { Model, ModelUtil } from '../views/ModelView'
-import { Post, PostDto } from '../views/Post'
-
-import Card from 'react-bootstrap/Card'
-import Container from 'react-bootstrap/Container'
-import Button from 'react-bootstrap/Button'
-import { Badge, ButtonGroup, FloatingLabel, Form, FormGroup, FormLabel, Modal, Row, ToggleButton, ToggleButtonGroup, Navbar, Nav } from 'react-bootstrap'
-import { withIronSessionSsr } from 'iron-session/next'
+import { ModelUtil } from '../views/ModelView'
+import { Post } from '../views/Post'
+import { Badge, Form, Modal, Row, Container, Card, Button } from 'react-bootstrap'
 import { Tag } from '../views/Tag'
 import { Category } from '../views/Category'
 import Navigation from '../components/Navigation'
 import { usePosts } from '../components/swr'
-import { ArrowDown, ArrowUp, ArrowDownSquare, ArrowDownSquareFill, Trash } from 'react-bootstrap-icons'
+import { ArrowDown, ArrowUp, Trash } from 'react-bootstrap-icons'
 import { useUser } from '@auth0/nextjs-auth0'
 
 type TagProps = {
@@ -44,7 +38,7 @@ interface PostsViewProps {
     tags: TagProps[]
 }
 
-export const getServerSideProps = async (req: any, res: any) =>  {
+export const getServerSideProps = async (req: any, res: any) => {
     let include: any = {
         category: true,
         PostTagRelationship: true
@@ -71,11 +65,13 @@ export const getServerSideProps = async (req: any, res: any) =>  {
                 id: p.category!.id
             },
             score: p.score,
-            tags: p.getTags().map(t => { return {
-                name: t.name,
-                color: t.color,
-                id: t.id
-            }})
+            tags: p.getTags().map(t => {
+                return {
+                    name: t.name,
+                    color: t.color,
+                    id: t.id
+                }
+            })
         }
         return props
     })
@@ -83,15 +79,19 @@ export const getServerSideProps = async (req: any, res: any) =>  {
     return {
         props: {
             posts: postProps,
-            tags: tags.map(t => { return {
-                id: t.id,
-                name: t.name,
-                color: t.color
-            }}),
-            categories: categories.map(c => { return {
-                id: c.id,
-                name: c.name
-            }})
+            tags: tags.map(t => {
+                return {
+                    id: t.id,
+                    name: t.name,
+                    color: t.color
+                }
+            }),
+            categories: categories.map(c => {
+                return {
+                    id: c.id,
+                    name: c.name
+                }
+            })
         }
     }
 }
@@ -125,7 +125,7 @@ function VoteHandler({ postId, score, myScore }: VoteHandlerProps) {
                 },
                 body: JSON.stringify(body)
             }).then(() => {
-                setVote(score) 
+                setVote(score)
             }).catch(err => console.error(err))
         }
     }
@@ -293,7 +293,7 @@ function PostForm({ categories, tags }: PostFormProps) {
             <Button variant="primary" onClick={handleShow}>
                 New Post
             </Button>
-        
+
             <Modal centered show={show} onHide={handleClose}>
                 <Form onSubmit={handleSubmit} method="POST">
                     <Modal.Header closeButton>
@@ -302,7 +302,7 @@ function PostForm({ categories, tags }: PostFormProps) {
                     <Modal.Body>
                         <Form.Group>
                             <Form.Label>Category</Form.Label>
-                            <Form.Select defaultValue={0}onChange={categoryChange} name="category">
+                            <Form.Select defaultValue={0} onChange={categoryChange} name="category">
                                 <option disabled value={0}>Select a category</option>
                                 {categories && categories.map((c) => (
                                     <option value={c.id} key={c.id}>{c.name}</option>
@@ -311,11 +311,11 @@ function PostForm({ categories, tags }: PostFormProps) {
                         </Form.Group>
                         <Form.Group>
                             <Form.Label>Title</Form.Label>
-                            <Form.Control required type="text" name="title" value={title} onChange={titleChange}/>
+                            <Form.Control required type="text" name="title" value={title} onChange={titleChange} />
                         </Form.Group>
                         <Form.Group>
                             <Form.Label>Content</Form.Label>
-                            <Form.Control required rows={6} as="textarea" name="content" value={content} onChange={contentChange}/>
+                            <Form.Control required rows={6} as="textarea" name="content" value={content} onChange={contentChange} />
                         </Form.Group>
                         <Form.Group>
                             <Form.Label>Tags</Form.Label>
@@ -377,7 +377,7 @@ export default function PostsView({ posts, categories, tags }: PostsViewProps) {
         setFilteredPosts(textPosts)
     }, [userPosts, posts, tagFilters, categoryFilter, textFilter])
 
-    const handleTagFilterUpdate = (event: React.ChangeEvent<HTMLInputElement>) => { 
+    const handleTagFilterUpdate = (event: React.ChangeEvent<HTMLInputElement>) => {
         const element = event.target
         const tagId = parseInt(element.id.split('-')[1])
         const checked = element.checked
@@ -388,7 +388,7 @@ export default function PostsView({ posts, categories, tags }: PostsViewProps) {
         }
     }
 
-    const handleTextFilter = (event: React.ChangeEvent<HTMLInputElement>) => { 
+    const handleTextFilter = (event: React.ChangeEvent<HTMLInputElement>) => {
         const element = event.target
         setTextFilter(element.value)
     }
@@ -408,7 +408,7 @@ export default function PostsView({ posts, categories, tags }: PostsViewProps) {
                 <Form>
                     <Form.Group>
                         <Form.Label>Filter by Text</Form.Label>
-                        <Form.Control onChange={handleTextFilter} type="text" placeholder="Search input"/>
+                        <Form.Control onChange={handleTextFilter} type="text" placeholder="Search input" />
                     </Form.Group>
                     <Form.Group>
                         <Form.Label>Filter by Category</Form.Label>
@@ -422,7 +422,6 @@ export default function PostsView({ posts, categories, tags }: PostsViewProps) {
                     <Form.Group>
                         <Form.Label>Filter by Tag</Form.Label>
                         {tags && tags.map((t) => (<span key={t.id}>
-                            {/* <Form.Check key={i} type="checkbox" label={t.name} name="tags" value={t.id}/> */}
                             <input onChange={handleTagFilterUpdate} type="checkbox" className="btn-check" id={`tag-${t.id}`} autoComplete="off" />
                             <label className="m-1 btn-sm btn btn-outline-primary" htmlFor={`tag-${t.id}`}>{t.name}</label>
                         </span>))}
@@ -430,10 +429,10 @@ export default function PostsView({ posts, categories, tags }: PostsViewProps) {
                 </Form>
             </Container>
             <Container>
-                {user && <PostForm tags={tags} categories={categories}/>}
+                {user && <PostForm tags={tags} categories={categories} />}
             </Container>
             <Container>
-                { filteredPosts && filteredPosts.slice(0).reverse().map((post: PostProps) => <PostEntry key={post.id} post={post} />) }
+                {filteredPosts && filteredPosts.slice(0).reverse().map((post: PostProps) => <PostEntry key={post.id} post={post} />)}
             </Container>
         </div>
     )

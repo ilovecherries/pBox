@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next"
 import { Post, PostAuthDto, PostDto } from "../../../views/Post"
 import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0'
+import { getUserInfo } from "../../../lib/auth0"
 
 export default withApiAuthRequired(postHandler)
 
@@ -25,9 +26,7 @@ async function postHandler(
         return
     }
 
-    const session = getSession(req, res)
-    const userId = session!.user.sub
-    const operator = false
+    const {userId, operator} = getUserInfo(req, res)
 
     switch (req.method) {
         case 'PUT':

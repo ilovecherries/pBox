@@ -7,6 +7,7 @@ import { Category } from "../views/Category"
 import { ModelUtil } from "../views/ModelView"
 import { Tag } from "../views/Tag"
 import { useUser, withPageAuthRequired } from '@auth0/nextjs-auth0'
+import isOp from "../components/user"
 
 type TagProps = {
     id: number,
@@ -53,7 +54,7 @@ export default function ConfigView() {
 
     const onCategorySubmit = async () => {
         const name = categoryName
-        const response = await fetch("/api/categories", {
+        await fetch("/api/categories", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -64,7 +65,7 @@ export default function ConfigView() {
         setCategoryName('')
     }
 
-    if (!(user && user.operator)) {
+    if (!(user && isOp(user))) {
         return(<>
             <Head>
                 <title>pBox - Configuration</title>

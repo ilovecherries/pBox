@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next"
 import { Tag, TagDto } from '../../../views/Tag'
 import { ModelUtil } from "../../../views/ModelView"
 import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0'
+import { getUserInfo } from "../../../lib/auth0"
 
 export default withApiAuthRequired(tagHandler)
 
@@ -26,9 +27,7 @@ async function tagHandler(
         return
     }
 
-    const session = getSession(req, res)
-    const userId = session!.sub.user
-    const operator = false
+    const {userId, operator} = getUserInfo(req, res)
 
     if (!operator) {
         res.status(403).json({ error: "Not an operator" })

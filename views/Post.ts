@@ -8,7 +8,7 @@ import { Vote, VoteScore } from "./Vote";
 export interface PostFields {
     title: string
     content: string
-    authorId: number
+    authorId: string
     categoryId: number
     tags: number[]
     score: number
