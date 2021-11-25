@@ -1,11 +1,9 @@
-import prisma from "../../../lib/prisma"
-import { withIronSessionApiRoute } from "iron-session/next"
 import { NextApiRequest, NextApiResponse } from "next"
-import { ironConfig, sessionWrapper } from "../../../lib/ironconfig"
 import { Tag, TagDto } from '../../../views/Tag'
 import { ModelUtil } from "../../../views/ModelView"
+import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0'
 
-export default withIronSessionApiRoute(tagHandler, ironConfig)
+export default withApiAuthRequired(tagHandler)
 
 type StatusData = {
     error?: string,
@@ -23,30 +21,30 @@ async function tagHandler(
         return
     }
 
-    if (req.method === "GET") {
+    if (req.method === 'GET') {
         await getTag()
         return
     }
 
-    await sessionWrapper(req.session).then(async user => {
-        if (user.operator === false) {
-            res.status(403).json({ error: "Not an operator" })
-            return
-        }
+    const session = getSession(req, res)
+    const userId = session!.sub.user
+    const operator = false
 
-        switch (req.method) {
-            case 'PUT':
-                await putTag()
-                break
-            case "DELETE":
-                await deleteTag()
-                break
-            default:
-                res.status(405).json({ error: "Method not allowed" })
-        }
+    if (!operator) {
+        res.status(403).json({ error: "Not an operator" })
+        return
+    }
 
-    })
-    .catch(e => res.status(401).json({ error: e.message }))
+    switch (req.method) {
+        case 'PUT':
+            await putTag()
+            break
+        case "DELETE":
+            await deleteTag()
+            break
+        default:
+            res.status(405).json({ error: "Method not allowed" })
+    }
 
     async function getTag() {
         await ModelUtil.getUnique(Tag, id).then((tag: Tag) => {

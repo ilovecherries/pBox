@@ -2,10 +2,11 @@ import Head from "next/head"
 import React from "react"
 import { Container, Col, Row, Form, Button } from "react-bootstrap"
 import Navigation from "../components/Navigation"
-import { useTags, useUser, useCategories } from "../components/swr"
+import { useTags, useCategories } from "../components/swr"
 import { Category } from "../views/Category"
 import { ModelUtil } from "../views/ModelView"
 import { Tag } from "../views/Tag"
+import { useUser, withPageAuthRequired } from '@auth0/nextjs-auth0'
 
 type TagProps = {
     id: number,
@@ -23,6 +24,8 @@ interface ConfigViewProps {
     categories: CategoryProps[]
 }
 
+export const getServerSideProps = withPageAuthRequired()
+
 export default function ConfigView() {
     const { user } = useUser()
     const tagSWR = useTags()
@@ -36,7 +39,7 @@ export default function ConfigView() {
 
     const onTagSubmit = async () => {
         const name = tagName, color = '#FFF'
-        const response = await fetch("/api/tags", {
+        await fetch("/api/tags", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"

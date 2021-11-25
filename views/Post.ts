@@ -1,9 +1,8 @@
 import prisma from "../lib/prisma";
 import { Category, CategoryDto } from "./Category";
-import { HasDto, IsModel, Model, ModelUtil } from "./ModelView";
+import { Model, ModelUtil } from "./ModelView";
 import PostTagRelationship from "./PostTagRelationship";
 import { Tag, TagDto } from "./Tag";
-import { User, UserDto } from "./User";
 import { Vote, VoteScore } from "./Vote";
 
 export interface PostFields {
@@ -21,7 +20,7 @@ export interface PostDto {
     id: number
     tags?: TagDto[]
     score: number
-    author?: UserDto
+    authorId?: string
     category?: CategoryDto
 }
 
@@ -35,13 +34,12 @@ export class Post extends Model<PostFields, PostDto> {
 
     id: number = 0
     title: string = ''
-    authorId: number = 0
+    authorId: string = ''
     categoryId: number = 0
     content: string = ''
     score: number = 0
     PostTagRelationship?: PostTagRelationship[]
     votes?: Vote[]
-    author?: User
     category?: Category
     private _tags?: Tag[]
 
@@ -64,10 +62,6 @@ export class Post extends Model<PostFields, PostDto> {
         this.votes = this.votes?.map(
             (vote) => new Vote(vote)
         )
-
-        if (this.author !== undefined) {
-            this.author = new User(this.author)
-        }
 
         if (this.category !== undefined) {
             this.category = new Category(this.category)
@@ -122,13 +116,6 @@ export class Post extends Model<PostFields, PostDto> {
             }
         }
 
-        if (fields.authorId !== undefined) {
-            const user = await prisma.user.findUnique({ where: { id: fields.authorId }})
-            if (user === null) {
-                throw new Error("User with this id does not exist")
-            }
-        }
-
         if (fields.categoryId !== undefined) {
             const category = await prisma.category.findUnique({ where: { id: fields.categoryId }})
             if (category === null) {
@@ -149,7 +136,7 @@ export class Post extends Model<PostFields, PostDto> {
         await Post.verifyFields(fields)
         let tags = fields.tags
         let data = {
-            author: { connect: { id: fields.authorId } },
+            authorId: fields.authorId,
             category: { connect: { id: fields.categoryId } },
             title: fields.title,
             content: fields.content,
@@ -175,10 +162,6 @@ export class Post extends Model<PostFields, PostDto> {
             title: fields.title,
             content: fields.content,
             score: fields.score
-        }
-
-        if (fields.authorId !== undefined) {
-            data.author = { connect: { id: fields.authorId } }
         }
 
         if (fields.categoryId !== undefined) {
@@ -216,34 +199,33 @@ export class Post extends Model<PostFields, PostDto> {
             id: this.id,
             title: this.title,
             content: this.content,
-            score: this.score
+            score: this.score,
         }
 
         dto.tags = this.getTags().map(x => x.toDto())
 
-        dto.author = this.author?.toDto()
         dto.category = this.category?.toDto()
 
         return dto
     }
 
-    getScore(user: User): number {
-        return this.votes?.find(x => x.userId === user.id)?.score ?? 0
+    getScore(userId: string): number {
+        return this.votes?.find(x => x.userId === userId)?.score ?? 0
     }
 
-    async vote(user: User, score: number): Promise<VoteScore> {
+    async vote(userId: string, score: number): Promise<VoteScore> {
         if (score !== 1 && score !== -1) {
             throw new Error("score must be 1 or -1")
         }
 
-        const oldVote: Vote | undefined = this.votes!.find(x => x.userId === user.id)
+        const oldVote: Vote | undefined = this.votes!.find(x => x.userId === userId)
 
         if (oldVote !== undefined && oldVote.score !== score) {
             const scoreChange = this.score + score * 2
             await ModelUtil.edit(Vote, { score }, {
                 where: {
                     userId_postId: {
-                        userId: user.id, 
+                        userId: userId, 
                         postId: this.id
                     } 
                 }
@@ -255,7 +237,7 @@ export class Post extends Model<PostFields, PostDto> {
             const scoreChange = this.score + score
             await ModelUtil.create(Vote, { 
                 postId: this.id, 
-                userId: user.id, 
+                userId: userId, 
                 score
             })
             await this.edit({ score: scoreChange })
@@ -265,15 +247,15 @@ export class Post extends Model<PostFields, PostDto> {
         }
     }
 
-    async unvote(user: User): Promise<VoteScore> {
-        const oldVote: Vote | undefined = this.votes!.find(x => x.userId === user.id)
+    async unvote(userId: string): Promise<VoteScore> {
+        const oldVote: Vote | undefined = this.votes!.find(x => x.userId === userId)
 
         if (oldVote !== undefined) {
             const scoreChange = this.score - oldVote.score
             await ModelUtil.delete(Vote, {
                 where: {
                     userId_postId: {
-                        userId: user.id, 
+                        userId: userId, 
                         postId: this.id
                     } 
                 }
@@ -285,18 +267,18 @@ export class Post extends Model<PostFields, PostDto> {
         }
     }
 
-    toAuthDto(user: User): PostAuthDto { 
+    toAuthDto(userId: string, operator: boolean): PostAuthDto { 
         let dto: any = this.toDto()
 
-        if (dto.author !== undefined) {
-            const owner = dto.author.id === user.id
+        if (this.authorId !== undefined) {
+            const owner = this.authorId === userId
             dto.owner = owner
-            if (user.operator === false) {
-                dto.author = undefined
+            if (operator) {
+                dto.authorId = this.authorId
             }
         }
 
-        dto.myScore = this.getScore(user)
+        dto.myScore = this.getScore(userId)
 
         return dto
     }

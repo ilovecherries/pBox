@@ -1,12 +1,12 @@
 
 import { withIronSessionApiRoute } from "iron-session/next";
 import { NextApiRequest, NextApiResponse } from "next";
-import { ironConfig, sessionWrapper } from "../../../lib/ironconfig";
 import prisma from "../../../lib/prisma";
 import { ModelUtil } from "../../../views/ModelView";
 import { Category, CategoryDto } from "../../../views/Category";
+import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0'
 
-export default withIronSessionApiRoute(tagsHandler, ironConfig)
+export default withApiAuthRequired(tagsHandler)
 
 type StatusData = {
     error?: string,
@@ -23,15 +23,14 @@ function tagsHandler(
             getCategories()
             break
         case 'POST':
-            sessionWrapper(req.session).then(user => {
-                if (user.operator === false) {
-                    res.status(401).json({ error: 'Must be an operator to create categories' })
-                    return
-                }
+            const session = getSession(req, res)
+            const operator = false
+            if (operator === false) {
+                res.status(401).json({ error: 'Must be an operator to create tags' })
+                return
+            }
 
-                postCategory()
-            })
-            .catch(e => res.status(401).json({ error: e.message }))
+            postCategory()
             break
         default:
             res.status(405).end()

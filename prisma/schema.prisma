@@ -7,16 +7,6 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-model User {
-    id              Int     @id @default(autoincrement())
-    username        String  @unique
-    operator        Boolean
-    hashed_password String
-    salt            String
-    Post            Post[]
-    Vote            Vote[]
-}
-
 model Category {
     id   Int    @id @default(autoincrement())
     name String @unique
@@ -34,8 +24,7 @@ model Post {
     id                  Int                   @id @default(autoincrement())
     title               String                @unique
     content             String
-    author              User                  @relation(fields: [authorId], references: [id], onDelete: Cascade)
-    authorId            Int
+    authorId            String
     createDate          DateTime              @default(now())
     editDate            DateTime              @default(now())
     category            Category              @relation(fields: [categoryId], references: [id])
@@ -46,9 +35,8 @@ model Post {
 }
 
 model Vote {
-    user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-    userId Int
-    post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+    userId String
+    post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
     postId Int
     score  Int
 

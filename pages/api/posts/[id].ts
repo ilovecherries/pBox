@@ -1,10 +1,8 @@
-import { withIronSessionApiRoute } from "iron-session/next";
 import { NextApiRequest, NextApiResponse } from "next"
-import { ironConfig, sessionWrapper } from "../../../lib/ironconfig"
 import { Post, PostAuthDto, PostDto } from "../../../views/Post"
-import { User } from "../../../views/User";
+import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0'
 
-export default withIronSessionApiRoute(postHandler, ironConfig);
+export default withApiAuthRequired(postHandler)
 
 type StatusData = {
     error?: string,
@@ -27,57 +25,42 @@ async function postHandler(
         return
     }
 
-    let user: User
+    const session = getSession(req, res)
+    const userId = session!.user.sub
+    const operator = false
 
-    try {
-        user = await sessionWrapper(req.session)
-        switch (req.method) {
-            case 'PUT':
-                await putPost()
-                break
-            case "DELETE":
-                await deletePost()
-                break
-            default:
-                res.status(405).json({ error: "Method not allowed" })
-        }
-        return
-    } catch (e) {
-        res.status(401).json({ error: "Not logged in" })
+    switch (req.method) {
+        case 'PUT':
+            await putPost()
+            break
+        case "DELETE":
+            await deletePost()
+            break
+        default:
+            res.status(405).json({ error: "Method not allowed" })
     }
 
-    res.status(200).json({ error: "OK" })
-
     async function getPost() {
-        try {
-            const user = await sessionWrapper(req.session)
-            const post = await Post.getUnique({ 
-                where: {id}, 
-                include: { author: true, votes: true, PostTagRelationship: true, category: true }
-            })
-            res.status(200).json({ post: post.toAuthDto(user) })
-        }
-        catch (e) {
-            const post = await Post.getUnique({ 
-                where: {id}, 
-                include: { category: true, PostTagRelationship: true }
-            })
-            res.status(200).json({ post: post.toDto() })
-        }
+        const post = await Post.getUnique({ 
+            where: {id}, 
+            include: { votes: true, PostTagRelationship: true, category: true }
+        })
+        res.status(200).json({ post: post.toAuthDto(userId, false) })
     }
 
     async function putPost() {
         await Post.getUnique( {
             where: {id},
-            include: { author: true, votes: true, PostTagRelationship: true, category: true }
+            include: { votes: true, PostTagRelationship: true, category: true }
         }).then(async post => {
-            if (post.author!.id !== user.id && !user.operator) {
+            if (post.authorId !== userId && !operator) {
                 res.status(403).json({ error: "Not authorized" })
+                return
             }
             let { title, content, categoryId, tags } = req.body
             await post.edit({ title, content, categoryId, tags })
             .then(async post => {
-                res.status(200).json({ post: post.toDto() })
+                res.status(200).json({ post: post.toAuthDto(userId, false) })
             })
             .catch(e => res.status(400).json({ error: e.message }))
         })
@@ -85,6 +68,10 @@ async function postHandler(
 
     async function deletePost() {
         await Post.getUnique(id).then((post: Post) => {
+            if (post.authorId !== userId && !operator) {
+                res.status(403).json({ error: "Not authorized" })
+                return
+            }
             post.delete().then(() => {
                 res.status(200).end()
             })

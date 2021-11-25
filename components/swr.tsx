@@ -1,21 +1,5 @@
 import useSWR from "swr"
 
-export function useUser() {
-    const fetcher = async (url: string) => {
-        const res = await fetch(url)
-        if (!res.ok) {
-            const { error } = await res.json()
-            throw error
-        }
-        const { user } = await res.json()
-        return user
-    }
-
-    const { data: user, mutate, error } = useSWR('/api/users/me', fetcher)
-
-    return { user, mutate, error }
-}
-
 export function usePosts() {
     const fetcher = async (url: string) => {
         const res = await fetch(url)

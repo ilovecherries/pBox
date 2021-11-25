@@ -1,11 +1,10 @@
 import prisma from "../../../lib/prisma"
-import { withIronSessionApiRoute } from "iron-session/next"
 import { NextApiRequest, NextApiResponse } from "next"
-import { ironConfig, sessionWrapper } from "../../../lib/ironconfig"
 import { Category, CategoryDto } from '../../../views/Category'
 import { ModelUtil } from "../../../views/ModelView"
+import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0'
 
-export default withIronSessionApiRoute(categoryHandler, ironConfig)
+export default withApiAuthRequired(categoryHandler)
 
 type StatusData = {
     error?: string,
@@ -28,25 +27,23 @@ async function categoryHandler(
         return
     }
 
-    sessionWrapper(req.session).then(user => {
-        if (user.operator === false) {
-            res.status(403).json({ error: "Not an operator" })
-            return
-        }
+    const session = getSession(req, res)
+    const operator = false
+    if (operator === false) {
+        res.status(401).json({ error: 'Must be an operator to create tags' })
+        return
+    }
 
-        switch (req.method) {
-            case 'PUT':
-                putCategory()
-                break
-            case "DELETE":
-                deleteCategory()
-                break
-            default:
-                res.status(405).json({ error: "Method not allowed" })
-        }
-
-    })
-    .catch(e => res.status(401).json({ error: e.message }))
+    switch (req.method) {
+        case 'PUT':
+            putCategory()
+            break
+        case "DELETE":
+            deleteCategory()
+            break
+        default:
+            res.status(405).json({ error: "Method not allowed" })
+    }
 
     function getCategory() {
         ModelUtil.getUnique(Category, id).then((category: Category) => {

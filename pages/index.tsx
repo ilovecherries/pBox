@@ -8,13 +8,13 @@ import Card from 'react-bootstrap/Card'
 import Container from 'react-bootstrap/Container'
 import Button from 'react-bootstrap/Button'
 import { Badge, ButtonGroup, FloatingLabel, Form, FormGroup, FormLabel, Modal, Row, ToggleButton, ToggleButtonGroup, Navbar, Nav } from 'react-bootstrap'
-import { getUser, ironConfig, sessionWrapper } from '../lib/ironconfig'
 import { withIronSessionSsr } from 'iron-session/next'
 import { Tag } from '../views/Tag'
 import { Category } from '../views/Category'
 import Navigation from '../components/Navigation'
-import { useUser, usePosts } from '../components/swr'
+import { usePosts } from '../components/swr'
 import { ArrowDown, ArrowUp, ArrowDownSquare, ArrowDownSquareFill, Trash } from 'react-bootstrap-icons'
+import { useUser } from '@auth0/nextjs-auth0'
 
 type TagProps = {
     id: number,
@@ -44,7 +44,7 @@ interface PostsViewProps {
     tags: TagProps[]
 }
 
-export const getServerSideProps = withIronSessionSsr(async ({req, res}) =>  {
+export const getServerSideProps = async (req: any, res: any) =>  {
     let include: any = {
         category: true,
         PostTagRelationship: true
@@ -52,11 +52,6 @@ export const getServerSideProps = withIronSessionSsr(async ({req, res}) =>  {
 
     if (req.session) {
         include.votes = true
-    }
-
-    let user = await getUser(req.session)
-    if (user && user.operator) {
-        include.author = true
     }
 
     let posts = await Post.getList({
@@ -82,10 +77,6 @@ export const getServerSideProps = withIronSessionSsr(async ({req, res}) =>  {
                 id: t.id
             }})
         }
-        if (user) {
-            props.myScore = p.getScore(user)
-            props.owner = p.authorId === user.id
-        }
         return props
     })
 
@@ -103,7 +94,7 @@ export const getServerSideProps = withIronSessionSsr(async ({req, res}) =>  {
             }})
         }
     }
-}, ironConfig)
+}
 
 interface PostEntryProps {
     post: PostProps
@@ -179,7 +170,7 @@ function VoteHandler({ postId, score, myScore }: VoteHandlerProps) {
 }
 
 function PostEntry({ post }: PostEntryProps) {
-    const { user } = useUser()
+    // const { user } = useUser()
     const { mutate } = usePosts()
 
     const deletePost = async () => {
@@ -207,7 +198,7 @@ function PostEntry({ post }: PostEntryProps) {
                         ))}
                     </div>
                     <div>
-                        {(post.owner || (user && user.operator)) && <Button variant="outline-danger" className="p-1" onClick={deletePost}>
+                        {(post.owner) && <Button variant="outline-danger" className="p-1" onClick={deletePost}>
                             <Trash />
                         </Button>}
                     </div>
@@ -351,10 +342,10 @@ function PostForm({ categories, tags }: PostFormProps) {
 }
 
 
-export default function PostsView({ categories, tags }: PostsViewProps) {
+export default function PostsView({ posts, categories, tags }: PostsViewProps) {
     const { user } = useUser()
-    const { posts, mutate } = usePosts()
     const [filteredPosts, setFilteredPosts] = React.useState(posts)
+    const { posts: userPosts, mutate } = usePosts()
     const [categoryFilter, setCategoryFilter] = React.useState<number>(0)
     const [tagFilters, setTagFilters] = React.useState<number[]>([])
     const [textFilter, setTextFilter] = React.useState<string>('')
@@ -364,10 +355,11 @@ export default function PostsView({ categories, tags }: PostsViewProps) {
     }, [user, mutate])
 
     React.useEffect(() => {
-        if (!posts) {
+        const p = userPosts || posts
+        if (!p) {
             return
         }
-        const categoryPosts = posts
+        const categoryPosts = p
             .filter((p: PostProps) => (categoryFilter > 0) ? p.category.id === categoryFilter : true)
         const newPosts = categoryPosts.filter((p: PostProps) => {
             if (tagFilters.length === 0) {
@@ -383,7 +375,7 @@ export default function PostsView({ categories, tags }: PostsViewProps) {
             return p.title.toLowerCase().includes(f) || p.content.toLowerCase().includes(f)
         })
         setFilteredPosts(textPosts)
-    }, [posts, tagFilters, categoryFilter, textFilter])
+    }, [userPosts, posts, tagFilters, categoryFilter, textFilter])
 
     const handleTagFilterUpdate = (event: React.ChangeEvent<HTMLInputElement>) => { 
         const element = event.target

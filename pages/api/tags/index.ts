@@ -1,11 +1,9 @@
-import { withIronSessionApiRoute } from "iron-session/next";
 import { NextApiRequest, NextApiResponse } from "next";
-import { ironConfig, sessionWrapper } from "../../../lib/ironconfig";
-import prisma from "../../../lib/prisma";
 import { ModelUtil } from "../../../views/ModelView";
 import { Tag, TagDto } from "../../../views/Tag";
+import { getSession, withApiAuthRequired} from '@auth0/nextjs-auth0'
 
-export default withIronSessionApiRoute(tagsHandler, ironConfig)
+export default withApiAuthRequired(tagsHandler)
 
 type StatusData = {
     error?: string,
@@ -22,15 +20,14 @@ async function tagsHandler(
             await getTags()
             break
         case 'POST':
-            await sessionWrapper(req.session).then(user => {
-                if (user.operator === false) {
-                    res.status(401).json({ error: 'Must be an operator to create tags' })
-                    return
-                }
+            const session = getSession(req, res)
+            const operator = false
+            if (operator === false) {
+                res.status(401).json({ error: 'Must be an operator to create tags' })
+                return
+            }
 
-                postTag()
-            })
-            .catch(e => res.status(401).json({ error: e.message }))
+            postTag()
             break
         default:
             res.status(405).end()

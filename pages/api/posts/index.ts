@@ -1,11 +1,9 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { withIronSessionApiRoute } from "iron-session/next";
-import { ironConfig, sessionWrapper } from "../../../lib/ironconfig";
-import { ModelUtil } from "../../../views/ModelView"
 import { Post, PostAuthDto, PostDto } from "../../../views/Post"
-import { User } from "../../../views/User";
+import { withApiAuthRequired, getSession } from '@auth0/nextjs-auth0'
 
-export default withIronSessionApiRoute(postsHandler, ironConfig);
+export default withApiAuthRequired(postsHandler)
 
 type StatusData = {
     error?: string,
@@ -17,33 +15,29 @@ async function postsHandler(
     req: NextApiRequest,
     res: NextApiResponse<StatusData>
 ) {
+    const session = getSession(req, res)
+    const userId = session!.user.sub
+    const operator = false
+
     switch (req.method) {
         case 'GET':
             await getPosts()
             break
         case 'POST':
-            await sessionWrapper(req.session)
-                .then(user => postPost(user))
-                .catch((e: Error) => res.status(401).json({error: e.message}))
+            postPost()
             break
         default:
             res.status(405).end()
     }
 
     async function getPosts() {
-        let posts: Post[] = []
-        await sessionWrapper(req.session)
-        .then(async (user) => {
-            posts = await Post.getList({ include: { votes: true, author: true, category: true, PostTagRelationship: true } })
-            res.status(200).json({ posts: posts.map(p => p.toAuthDto(user)) })
-        })
-        .catch(async () => {
-            posts = await Post.getList({ include: { category: true, PostTagRelationship: true } })
-            res.status(200).json({ posts: posts.map(p => p.toDto()) })
+        res.status(200).json({
+            posts: (await Post.getList({ include: { votes: true, category: true, PostTagRelationship: true } }))
+                .map(p => p.toAuthDto(userId, operator))
         })
     }
 
-    async function postPost(user: User) {
+    async function postPost() {
         const { title, content, categoryId, tags } = req.body
 
         if (!title || !content || !categoryId || !tags) {
@@ -54,12 +48,12 @@ async function postsHandler(
         await Post.create({
             title,
             content,
-            authorId: user.id,
+            authorId: userId,
             categoryId,
             tags,
             score: 0
         }).then(async (post: Post) => {
-            res.status(201).json({ post: post.toAuthDto(user) })
+            res.status(201).json({ post: post.toAuthDto(userId, operator) })
         }).catch((e: Error) => {
             res.status(400).json({ error: e.message })
         })

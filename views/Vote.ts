@@ -15,7 +15,7 @@ export class Vote extends Model<VoteFields, VoteDto> implements VoteFields {
     readonly prismaDelegate = prisma.vote
 
     public id: number = 0
-    public userId: number = 0
+    public userId!: String
     public postId: number = 0
     public score: number = 0
 
