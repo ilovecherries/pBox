@@ -2,6 +2,5 @@
 module.exports = {
   reactStrictMode: true,
   env: {
-    ironKey: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
   }
 }

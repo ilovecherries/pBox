@@ -1,23 +1,21 @@
 using HotChocolate.Execution;
-using pBox.Backend;
-
 namespace pBox.Backend.Models;
 
 public class Category
 {
     public int Id { get; set; }
     public string Name { get; set; }
-
-    public List<Post> Posts { get; set; }
-    public List<Category> Children { get; set; }
+    public List<Post>? Posts { get; set; }
+    public List<Category>? Children { get; set; }
     public Category? Parent { get; set; }
 }
 
 public class CategoryQuery
 {
     [UsePBoxDbContext]
-    public Category? GetCategory([ScopedService] PBoxDbContext db, int id)
-        => db.Categories.Find(id);
+    [UseFirstOrDefault]
+    public IQueryable<Category> GetCategory([ScopedService] PBoxDbContext db, int id)
+        => db.Categories.Where(c => c.Id == id);
 
     [UsePBoxDbContext]
     public IQueryable<Category> GetCategories([ScopedService] PBoxDbContext db)
@@ -27,19 +25,19 @@ public class CategoryQuery
 public class CategoryMutation
 {
     [UsePBoxDbContext]
-    public Category AddCategory([ScopedService] PBoxDbContext db,
+    public async Task<Category> AddCategory([ScopedService] PBoxDbContext db,
         string name, int? parentId)
     {
         Category? parent = null;
 
-        if (parentId != null)
+        if (parentId != null &&
+            (parent = await db.Categories.FindAsync(parentId)) == null)
         {
-            if (db.Categories.Find(parentId) == null)
-            {
-                throw new QueryException(ErrorBuilder.New()
+            throw new QueryException(
+                ErrorBuilder.New()
                     .SetMessage("Category with given parentId does not exist.")
+                    .SetCode("INVALID_RELATION")
                     .Build());
-            }
         }
 
         var category = new Category()
@@ -49,7 +47,7 @@ public class CategoryMutation
         };
 
         db.Categories.Add(category);
-        db.SaveChanges();
+        await db.SaveChangesAsync();
         return category;
     }
 }
