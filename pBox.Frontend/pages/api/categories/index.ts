@@ -1,11 +1,11 @@
 
 import { withIronSessionApiRoute } from "iron-session/next";
 import { NextApiRequest, NextApiResponse } from "next";
-import prisma from "../../../lib/prisma";
+import prisma from "../../../../lib/prisma";
 import { ModelUtil } from "../../../views/ModelView";
 import { Category, CategoryDto } from "../../../views/Category";
 import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0'
-import { getUserInfo } from "../../../lib/auth0";
+import { getUserInfo } from "../../../../lib/auth0";
 
 export default withApiAuthRequired(tagsHandler)
 

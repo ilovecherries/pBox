@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30114.105
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pBox.Backend", "pBox.Backend\pBox.Backend.csproj", "{7DCBB7E4-0D9A-44BB-A7E5-66E0CE817A94}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pBox.Backend.Test", "pBox.Backend.Test\pBox.Backend.Test.csproj", "{13BBB3F7-EA87-4C4E-91B8-10A26F0EC3FC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7DCBB7E4-0D9A-44BB-A7E5-66E0CE817A94}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7DCBB7E4-0D9A-44BB-A7E5-66E0CE817A94}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7DCBB7E4-0D9A-44BB-A7E5-66E0CE817A94}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7DCBB7E4-0D9A-44BB-A7E5-66E0CE817A94}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13BBB3F7-EA87-4C4E-91B8-10A26F0EC3FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13BBB3F7-EA87-4C4E-91B8-10A26F0EC3FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13BBB3F7-EA87-4C4E-91B8-10A26F0EC3FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13BBB3F7-EA87-4C4E-91B8-10A26F0EC3FC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

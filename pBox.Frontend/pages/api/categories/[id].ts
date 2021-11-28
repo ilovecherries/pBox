@@ -1,9 +1,9 @@
-import prisma from "../../../lib/prisma"
+import prisma from "../../../../lib/prisma"
 import { NextApiRequest, NextApiResponse } from "next"
 import { Category, CategoryDto } from '../../../views/Category'
 import { ModelUtil } from "../../../views/ModelView"
 import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0'
-import { getUserInfo } from "../../../lib/auth0"
+import { getUserInfo } from "../../../../lib/auth0"
 
 export default withApiAuthRequired(categoryHandler)
 
