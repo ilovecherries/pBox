@@ -1,35 +1,51 @@
 import useSWR from "swr"
 
+const fetcher = async (query: string) => {
+    const data = await fetch('https://localhost:7123/graphql/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify({ query })
+    })
+    return data.json()
+}
+
 export function usePosts() {
-    const fetcher = async (url: string) => {
-        const res = await fetch(url)
-        if (!res.ok) {
-            const { error } = await res.json()
-            throw error
+    const query = `{
+        posts {
+            id
+            title
+            content
+            category {
+                id
+                name
+            }
+            tags {
+                id
+                name
+                color
+            }
         }
-        const { posts } = await res.json()
-        return posts
-    }
+    }`
 
-    const { data: posts, mutate, error } = useSWR('/api/posts', fetcher)
+    const { data: { posts, errors }, mutate } = useSWR(query, fetcher)
 
-    return { posts, mutate, error }
+    return { posts, mutate, errors }
 }
 
 export function useCategories() {
-    const fetcher = async (url: string) => {
-        const res = await fetch(url)
-        if (!res.ok) {
-            const { error } = await res.json()
-            throw error
+    const query = `{
+        categories {
+            id
+            name
         }
-        const { categories } = await res.json()
-        return categories
-    }
+    }`
 
-    const { data: categories, mutate, error } = useSWR('/api/categories', fetcher)
+    const { data: { categories, errors }, mutate } = useSWR(query, fetcher)
 
-    return { categories, mutate, error }
+    return { categories, mutate, errors }
 }
 
 export function useTags() {

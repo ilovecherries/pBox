@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using pBox.Backend;
-using pBox.Backend.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -66,7 +65,9 @@ builder.Services.AddAuthentication(options =>
             }
         };
     });
+
 builder.Services.AddGraphQLServer()
+    .AddAuthorization()
     .AddProjections()
     .AddQueryType<Query>()
     .AddTypeExtension<PostExtensions>()
