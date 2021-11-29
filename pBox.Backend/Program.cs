@@ -8,7 +8,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddGraphQLServer()
+    .AddProjections()
     .AddQueryType<Query>()
+    .AddTypeExtension<PostExtensions>()
     .AddMutationType<Mutation>()
     .AddErrorFilter<GraphQlErrorFilter>();
 builder.Services.AddPooledDbContextFactory<PBoxDbContext>(options =>

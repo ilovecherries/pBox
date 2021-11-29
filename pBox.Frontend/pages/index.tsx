@@ -1,10 +1,6 @@
 import Head from 'next/head'
 import React, { useEffect } from 'react'
-import { ModelUtil } from '../views/ModelView'
-import { Post } from '../views/Post'
 import { Badge, Form, Modal, Row, Container, Card, Button } from 'react-bootstrap'
-import { Tag } from '../views/Tag'
-import { Category } from '../views/Category'
 import Navigation from '../components/Navigation'
 import { usePosts } from '../components/swr'
 import { ArrowDown, ArrowUp, Trash } from 'react-bootstrap-icons'
@@ -39,59 +35,53 @@ interface PostsViewProps {
 }
 
 export const getServerSideProps = async (req: any, res: any) => {
-    let include: any = {
-        category: true,
-        PostTagRelationship: true
-    }
-
-    if (req.session) {
-        include.votes = true
-    }
-
-    let posts = await Post.getList({
-        include        // include: { category: true }
-    })
-    let tags = await ModelUtil.getList(Tag)
-    let categories = await ModelUtil.getList(Category)
-
-
-    let postProps: PostProps[] = posts.map(p => {
-        let props: PostProps = {
-            id: p.id,
-            title: p.title,
-            content: p.content,
-            category: {
-                name: p.category!.name,
-                id: p.category!.id
-            },
-            score: p.score,
-            tags: p.getTags().map(t => {
-                return {
-                    name: t.name,
-                    color: t.color,
-                    id: t.id
+    const data = await fetch('https://localhost:7123/graphql/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+            query: `
+            {
+                posts {
+                    id
+                    title
+                    content
+                    score
+                    category {
+                        id
+                        name
+                    }
+                    tags {
+                        id
+                        name
+                        color
+                    }
                 }
-            })
-        }
-        return props
-    })
+                categories {
+                    id
+                    name
+                }
+                tags {
+                    id
+                    name
+                    color
+                }
+            }`
+        })
+    }).then(res => res.json())
+
+    console.log(data)
+    console.log(data.errors)
+    const { data: { posts, categories, tags } } = data
+    console.log(posts)
 
     return {
         props: {
-            posts: postProps,
-            tags: tags.map(t => {
-                return {
-                    id: t.id,
-                    name: t.name,
-                    color: t.color
-                }
-            }),
-            categories: categories.map(c => {
-                return {
-                    id: c.id,
-                    name: c.name
-                }
-            })
+            posts: posts as PostProps[],
+            categories: categories as CategoryProps[],
+            tags: tags as TagProps[]
         }
     }
 }

@@ -17,18 +17,26 @@ public class Query
         => db.Categories;
 
     [UsePBoxDbContext]
+    [UseProjection]
+    [UseFirstOrDefault]
+    public IQueryable<Vote> GetVote([ScopedService] PBoxDbContext db, int id)
+        => db.Votes.Where(v => v.Id == id);
+
+    [UsePBoxDbContext]
+    [UseProjection]
+    public IQueryable<Vote> GetVotes([ScopedService] PBoxDbContext db)
+        => db.Votes;
+
+    [UsePBoxDbContext]
+    [UseProjection]
     [UseFirstOrDefault]
     public IQueryable<Post> GetPost([ScopedService] PBoxDbContext db, int id)
         => db.Posts.Where(p => p.Id == id);
 
     [UsePBoxDbContext]
+    [UseProjection]
     public IQueryable<Post> GetPosts([ScopedService] PBoxDbContext db)
         => db.Posts;
-
-    [UsePBoxDbContext]
-    [UseFirstOrDefault]
-    public int GetScore([Parent] Post post)
-        => post.Votes?.Select(v => (int)v.Score).Sum() ?? 0;
 
     [UsePBoxDbContext]
     [UseFirstOrDefault]
@@ -45,7 +53,7 @@ public class Query
         => db.Tags.Where(t => t.Id == id);
 
     [UsePBoxDbContext]
-    public IQueryable<Tag> GetTag([ScopedService] PBoxDbContext db)
+    public IQueryable<Tag> GetTags([ScopedService] PBoxDbContext db)
         => db.Tags;
 }
 
@@ -82,6 +90,19 @@ public class Mutation
     public async Task<Vote> SetVote([ScopedService] PBoxDbContext db, int score,
         int postId, int userId)
     {
+        Vote? oldVote = null;
+        if ((oldVote = await db.Votes
+                .Include(v => v.Author)
+                .Include(v => v.Post)
+                .Where(v => v.AuthorId == userId && v.PostId == postId)
+                .FirstOrDefaultAsync()) != null)
+        {
+            System.Console.WriteLine("HEARTS AS STRONG AS HORSES");
+            oldVote.Score = (Score)score;
+            await db.SaveChangesAsync();
+            return oldVote;
+        }
+
         Post? post = await db.Posts.FindAsync(postId);
         if (post == null)
         {
@@ -118,15 +139,8 @@ public class Mutation
             Score = (Score)score
         };
 
-        await db.Votes
-            .Upsert(vote)
-            .On(v => new { v.AuthorId, v.PostId })
-            .WhenMatched((v) => new Vote
-            {
-                Score = (Score)score
-            })
-            .RunAsync();
-
+        await db.Votes.AddAsync(vote);
+        await db.SaveChangesAsync();
         return vote;
     }
 
@@ -183,7 +197,7 @@ public class Mutation
         }
 
         List<Tag>? tags = null;
-        if ((tagIds != null) && 
+        if ((tagIds != null) &&
             (tags = db.Tags.Where(t => tagIds.Contains(t.Id)).ToList()).Capacity != tagIds.Capacity)
         {
             throw new QueryException(
@@ -205,4 +219,16 @@ public class Mutation
         await db.SaveChangesAsync();
         return post;
     }
+}
+
+[ExtendObjectType(typeof(Post))]
+public class PostExtensions
+{
+    [UsePBoxDbContext]
+    [BindMember(nameof(Post.Score))]
+    public int GetScore([ScopedService] PBoxDbContext db, [Parent] Post post)
+        => db.Votes
+            .Where(v => v.PostId == post.Id)
+            .Select(v => (int)v.Score)
+            .Sum();
 }
