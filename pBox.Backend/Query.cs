@@ -28,7 +28,7 @@ public class Query
     [UsePBoxDbContext]
     [UseFirstOrDefault]
     public int GetScore([Parent] Post post)
-        => post.Votes.Select(v => (int)v.Score).Sum();
+        => post.Votes?.Select(v => (int)v.Score).Sum() ?? 0;
 
     [UsePBoxDbContext]
     [UseFirstOrDefault]
@@ -82,7 +82,8 @@ public class Mutation
     public async Task<Vote> SetVote([ScopedService] PBoxDbContext db, int score,
         int postId, int userId)
     {
-        if (await db.Posts.FindAsync(postId) == null)
+        Post? post = await db.Posts.FindAsync(postId);
+        if (post == null)
         {
             throw new QueryException(
                 ErrorBuilder.New()
@@ -100,21 +101,20 @@ public class Mutation
                     .Build());
         }
 
-        // User? user = await db.Users.FindAsync(postId);
-
-        // if (user == null)
-        // {
-        //     throw new QueryException(
-        //         ErrorBuilder.New()
-        //             .SetMessage("User with given userId does not exist.")
-        //             .SetCode("INVALID_RELATION")
-        //             .Build());
-        // }
+        User? author = await db.Users.FindAsync(postId);
+        if (author == null)
+        {
+            throw new QueryException(
+                ErrorBuilder.New()
+                    .SetMessage("User with given userId does not exist.")
+                    .SetCode("INVALID_RELATION")
+                    .Build());
+        }
 
         var vote = new Vote()
         {
-            AuthorId = userId,
-            PostId = postId,
+            Post = post,
+            Author = author,
             Score = (Score)score
         };
 
@@ -162,6 +162,47 @@ public class Mutation
     public async Task<Post> AddPost([ScopedService] PBoxDbContext db, string title,
         string content, int categoryId, List<int>? tagIds, int authorId)
     {
-        
+        Category? category = await db.Categories.FindAsync(categoryId);
+        if (category == null)
+        {
+            throw new QueryException(
+                ErrorBuilder.New()
+                    .SetMessage("Category with given categoryId does not exist.")
+                    .SetCode("CATEGORY_DOES_NOT_EXIST")
+                    .Build());
+        }
+
+        User? user = await db.Users.FindAsync(authorId);
+        if (user == null)
+        {
+            throw new QueryException(
+                ErrorBuilder.New()
+                    .SetMessage("User with given userId does not exist.")
+                    .SetCode("USER_DOES_NOT_EXIST")
+                    .Build());
+        }
+
+        List<Tag>? tags = null;
+        if ((tagIds != null) && 
+            (tags = db.Tags.Where(t => tagIds.Contains(t.Id)).ToList()).Capacity != tagIds.Capacity)
+        {
+            throw new QueryException(
+                ErrorBuilder.New()
+                    .SetMessage("One or more of the tags in tagIds does not exist.")
+                    .SetCode("TAG_DOES_NOT_EXIST")
+                    .Build());
+        }
+
+        var post = new Post()
+        {
+            Title = title,
+            Content = content,
+            Category = category,
+            Author = user
+        };
+
+        await db.Posts.AddAsync(post);
+        await db.SaveChangesAsync();
+        return post;
     }
 }
