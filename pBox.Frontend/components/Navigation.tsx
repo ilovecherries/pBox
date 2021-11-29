@@ -1,10 +1,10 @@
 import React from "react"
 import { Container, Nav, Navbar } from "react-bootstrap"
-import { useUser } from '@auth0/nextjs-auth0'
 import isOp from "./user"
+import { useAuth0 } from "@auth0/auth0-react"
 
 export default function Navigation() {
-    const { user } = useUser()
+    const { loginWithRedirect, logout, user } = useAuth0()
 
     return (
         <Navbar bg="dark" variant="dark">
@@ -24,11 +24,11 @@ export default function Navigation() {
                 <Navbar.Collapse className="justify-content-end">
                     <Nav>
                         {!user && <>
-                            <Nav.Link href="/api/auth/login">Log In</Nav.Link>
+                            <Nav.Link onClick={() => loginWithRedirect({ returnTo: window.location.origin })} href="#">Log In</Nav.Link>
                         </>}
                         {user && <>
                             <Navbar.Text>Signed in as: {user.name}</Navbar.Text>
-                            <Nav.Link href="/api/auth/logout">Log Out</Nav.Link>
+                            <Nav.Link onClick={() => logout({ returnTo: window.location.origin })} href="#">Log Out</Nav.Link>
                         </>}
                     </Nav>
                 </Navbar.Collapse>

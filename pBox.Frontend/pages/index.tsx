@@ -4,7 +4,7 @@ import { Badge, Form, Modal, Row, Container, Card, Button } from 'react-bootstra
 import Navigation from '../components/Navigation'
 import { usePosts } from '../components/swr'
 import { ArrowDown, ArrowUp, Trash } from 'react-bootstrap-icons'
-import { useUser } from '@auth0/nextjs-auth0'
+import { useAuth0 } from '@auth0/auth0-react'
 
 type TagProps = {
     id: number,
@@ -160,7 +160,7 @@ function VoteHandler({ postId, score, myScore }: VoteHandlerProps) {
 }
 
 function PostEntry({ post }: PostEntryProps) {
-    // const { user } = useUser()
+    const { user } = useAuth0()
     const { mutate } = usePosts()
 
     const deletePost = async () => {
@@ -333,12 +333,14 @@ function PostForm({ categories, tags }: PostFormProps) {
 
 
 export default function PostsView({ posts, categories, tags }: PostsViewProps) {
-    const { user } = useUser()
+    const { user } = useAuth0()
     const [filteredPosts, setFilteredPosts] = React.useState(posts)
-    const { posts: userPosts, mutate } = usePosts()
+    const { posts: userPosts, errors, mutate } = usePosts()
     const [categoryFilter, setCategoryFilter] = React.useState<number>(0)
     const [tagFilters, setTagFilters] = React.useState<number[]>([])
     const [textFilter, setTextFilter] = React.useState<string>('')
+    console.log(userPosts)
+    console.log(errors)
 
     React.useEffect(() => {
         mutate()

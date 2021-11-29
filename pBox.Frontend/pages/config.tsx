@@ -3,11 +3,8 @@ import React from "react"
 import { Container, Col, Row, Form, Button } from "react-bootstrap"
 import Navigation from "../components/Navigation"
 import { useTags, useCategories } from "../components/swr"
-import { Category } from "../views/Category"
-import { ModelUtil } from "../views/ModelView"
-import { Tag } from "../views/Tag"
-import { useUser, withPageAuthRequired } from '@auth0/nextjs-auth0'
 import isOp from "../components/user"
+import { useAuth0 } from "@auth0/auth0-react"
 
 type TagProps = {
     id: number,
@@ -25,10 +22,8 @@ interface ConfigViewProps {
     categories: CategoryProps[]
 }
 
-export const getServerSideProps = withPageAuthRequired()
-
 export default function ConfigView() {
-    const { user } = useUser()
+    const { user } = useAuth0()
     const tagSWR = useTags()
     const { tags } = tagSWR, mutateTags = tagSWR.mutate
     const categorySWR = useCategories()

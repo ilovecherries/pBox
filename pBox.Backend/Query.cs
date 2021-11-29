@@ -1,5 +1,4 @@
-using HotChocolate;
-using HotChocolate.Data;
+using HotChocolate.AspNetCore.Authorization;
 using HotChocolate.Execution;
 using Microsoft.EntityFrameworkCore;
 using pBox.Backend;
@@ -225,10 +224,21 @@ public class Mutation
 public class PostExtensions
 {
     [UsePBoxDbContext]
-    [BindMember(nameof(Post.Score))]
     public int GetScore([ScopedService] PBoxDbContext db, [Parent] Post post)
         => db.Votes
             .Where(v => v.PostId == post.Id)
             .Select(v => (int)v.Score)
             .Sum();
+
+    [UsePBoxDbContext]
+    [Authorize]
+    public int GetMyScore([ScopedService] PBoxDbContext db, [Parent] Post post,
+        [Service] IHttpContextAccessor contextAccessor)
+    {
+        System.Console.WriteLine("PONY SEX");
+        return db.Votes
+            .Where(v => v.PostId == post.Id)
+            .Select(v => (int)v.Score)
+            .FirstOrDefault(0);
+    }
 }

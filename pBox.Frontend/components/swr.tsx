@@ -1,7 +1,7 @@
 import useSWR from "swr"
 
 const fetcher = async (query: string) => {
-    const data = await fetch('https://localhost:7123/graphql/', {
+    const res = await fetch('https://localhost:7123/graphql/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -9,30 +9,19 @@ const fetcher = async (query: string) => {
         },
         body: JSON.stringify({ query })
     })
-    return data.json()
+    return res.json()
 }
 
 export function usePosts() {
     const query = `{
         posts {
-            id
-            title
-            content
-            category {
-                id
-                name
-            }
-            tags {
-                id
-                name
-                color
-            }
+            myScore
         }
     }`
 
-    const { data: { posts, errors }, mutate } = useSWR(query, fetcher)
+    const { data, mutate } = useSWR(query, fetcher)
 
-    return { posts, mutate, errors }
+    return { posts: data?.data?.posts, mutate, errors: data?.data?.errors }
 }
 
 export function useCategories() {
@@ -43,23 +32,21 @@ export function useCategories() {
         }
     }`
 
-    const { data: { categories, errors }, mutate } = useSWR(query, fetcher)
+    const { data, mutate } = useSWR(query, fetcher)
 
-    return { categories, mutate, errors }
+    return { categories: data?.data?.categories, mutate, errors: data?.data?.errors }
 }
 
 export function useTags() {
-    const fetcher = async (url: string) => {
-        const res = await fetch(url)
-        if (!res.ok) {
-            const { error } = await res.json()
-            throw error
+    const query = `{
+        tags {
+            id
+            name
+            color
         }
-        const { tags } = await res.json()
-        return tags
-    }
+    }`
 
-    const { data: tags, mutate, error } = useSWR('/api/tags', fetcher)
+    const { data, mutate } = useSWR(query, fetcher)
 
-    return { tags, mutate, error }
+    return { categories: data?.data?.tags, mutate, errors: data?.data?.errors }
 }
