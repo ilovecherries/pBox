@@ -8,8 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddGraphQLServer()
-    .AddQueryType<CategoryQuery>()
-    .AddMutationType<CategoryMutation>()
+    .AddQueryType<Query>()
+    .AddMutationType<Mutation>()
     .AddErrorFilter<GraphQlErrorFilter>();
 builder.Services.AddPooledDbContextFactory<PBoxDbContext>(options =>
     options.UseSqlite("Data Source=mydatabase.db"));

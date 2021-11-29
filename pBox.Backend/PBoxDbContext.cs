@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using System.Runtime.CompilerServices;
 using pBox.Backend.Models;
+using HotChocolate.Data;
+using HotChocolate;
 
 namespace pBox.Backend;
 
