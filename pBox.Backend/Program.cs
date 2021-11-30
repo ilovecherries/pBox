@@ -1,7 +1,6 @@
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using pBox.Backend;
 
@@ -11,7 +10,6 @@ var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
 // Add services to the container.
 
-builder.Services.AddControllers();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: MyAllowSpecificOrigins,
@@ -19,64 +17,41 @@ builder.Services.AddCors(options =>
                       {
                           builder.WithOrigins("http://localhost:3000")
                             .AllowAnyHeader()
-                            .AllowAnyMethod();
+                            .AllowAnyMethod()
+                            .AllowCredentials();
                       });
 });
-builder.Services.AddAuthentication(options =>
+
+var domain = $"https://{builder.Configuration["Auth0:Domain"]}/";
+var audience = builder.Configuration["Auth0:Audience"];
+
+var opts = new JwtBearerOptions()
+{
+    Authority = domain,
+    TokenValidationParameters = new TokenValidationParameters
     {
-        options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    }).AddCookie()
-    .AddOpenIdConnect("Auth0", options =>
+        ValidateIssuer = true,
+        ValidIssuer = domain,
+        ValidateAudience = true,
+        ValidAudience = audience,
+        ValidateLifetime = true
+    }
+};
+builder.Services.AddSingleton(opts);
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        options.Authority = $"https://{builder.Configuration["Auth0:Domain"]}";
-
-        options.ClientId = builder.Configuration["Auth0:ClientId"];
-        options.ClientSecret = builder.Configuration["Auth0:ClientSecret"];
-
-        options.ResponseType = OpenIdConnectResponseType.Code;
-
-        options.Scope.Clear();
-        options.Scope.Add("openid");
-        options.Scope.Add("profile");
-        options.Scope.Add("email");
-
-        options.CallbackPath = new PathString("/callback");
-
-        options.ClaimsIssuer = "Auth0";
-
-        options.SaveTokens = true;
-
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            NameClaimType = "name"
-        };
-
-        options.Events = new OpenIdConnectEvents
-        {
-            OnRedirectToIdentityProviderForSignOut = (context) =>
-            {
-                var logoutUri = $"https://{builder.Configuration["Auth0:Domain"]}/v2/logout?client_id={builder.Configuration["Auth0:ClientId"]}";
-
-                var postLogoutUri = context.Properties.RedirectUri;
-                if (!string.IsNullOrEmpty(postLogoutUri))
-                {
-                    if (postLogoutUri.StartsWith("/"))
-                    {
-                        var request = context.Request;
-                        postLogoutUri = request.Scheme + "://" + request.Host + request.PathBase + postLogoutUri;
-                    }
-                    logoutUri += $"&returnTo={ Uri.EscapeDataString(postLogoutUri)}";
-                }
-
-                context.Response.Redirect(logoutUri);
-                context.HandleResponse();
-
-                return Task.CompletedTask;
-            }
-        };
+        options.Authority = domain;
+        options.Audience = audience;
     });
+
+builder.Services.AddAuthorization();
+
+builder.Services.AddControllers();
+
+builder.Services.AddHttpContextAccessor();
+// builder.Services.AddSingleton<IAuthorizationHandler, HasScopeHandler>();
 
 builder.Services.AddGraphQLServer()
     .AddAuthorization()
@@ -94,14 +69,48 @@ app.UseHttpsRedirection();
 
 app.UseCors(MyAllowSpecificOrigins);
 
-app.UseAuthorization();
-
 app.MapControllers();
 
-app.UseRouting()
-    .UseEndpoints(endpoints =>
+app.UseRouting();
+
+app.UseAuthentication();
+
+app.UseAuthorization();
+
+app.UseEndpoints(endpoints =>
     {
         endpoints.MapGraphQL();
     });
 
 app.Run();
+
+// public class HasScopeHandler : AuthorizationHandler<HasScopeRequirement>
+// {
+//     protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, HasScopeRequirement requirement)
+//     {
+//         // If user does not have the scope claim, get out of here
+//         if (!context.User.HasClaim(c => c.Type == "scope" && c.Issuer == requirement.Issuer))
+//             return Task.CompletedTask;
+
+//         // Split the scopes string into an array
+//         var scopes = context.User?.FindFirst(c => c.Type == "scope" && c.Issuer == requirement.Issuer).Value.Split(' ');
+
+//         // Succeed if the scope array contains the required scope
+//         if (scopes.Any(s => s == requirement.Scope))
+//             context.Succeed(requirement);
+
+//         return Task.CompletedTask;
+//     }
+// }
+
+// public class HasScopeRequirement : IAuthorizationRequirement
+// {
+//     public string Issuer { get; }
+//     public string Scope { get; }
+
+//     public HasScopeRequirement(string scope, string issuer)
+//     {
+//         Scope = scope ?? throw new ArgumentNullException(nameof(scope));
+//         Issuer = issuer ?? throw new ArgumentNullException(nameof(issuer));
+//     }
+// }

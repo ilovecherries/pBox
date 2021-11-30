@@ -3,6 +3,8 @@ using HotChocolate.Execution;
 using Microsoft.EntityFrameworkCore;
 using pBox.Backend;
 using pBox.Backend.Models;
+using System.Security.Claims;
+using System.Text.Json;
 
 public class Query
 {
@@ -233,12 +235,16 @@ public class PostExtensions
     [UsePBoxDbContext]
     [Authorize]
     public int GetMyScore([ScopedService] PBoxDbContext db, [Parent] Post post,
-        [Service] IHttpContextAccessor contextAccessor)
+        ClaimsPrincipal claimsPrincipal)
     {
-        System.Console.WriteLine("PONY SEX");
-        return db.Votes
-            .Where(v => v.PostId == post.Id)
-            .Select(v => (int)v.Score)
-            .FirstOrDefault(0);
+        System.Console.WriteLine("BALLS");
+        var userId = claimsPrincipal.FindFirstValue(ClaimTypes.NameIdentifier);
+        System.Console.WriteLine(userId);
+        System.Console.WriteLine("BALLED");
+        return 99999;
+        // return db.Votes
+        //     .Where(v => v.PostId == post.Id)
+        //     .Select(v => (int)v.Score)
+        //     .FirstOrDefault(0);
     }
 }

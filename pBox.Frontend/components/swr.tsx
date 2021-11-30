@@ -15,11 +15,39 @@ const fetcher = async (query: string) => {
 export function usePosts() {
     const query = `{
         posts {
+            id
+            title
+            content
+            score
+            myScore
+            category {
+                id
+                name
+            }
+            tags {
+                id
+                name
+                color
+            }
+        }
+    }`
+
+    const { data, mutate } = useSWR(query, fetcher)
+    console.log(data)
+
+    return { posts: data?.data?.posts, mutate, errors: data?.data?.errors }
+}
+
+export function useMyScore() {
+    const query = `{
+        posts {
+            id
             myScore
         }
     }`
 
     const { data, mutate } = useSWR(query, fetcher)
+    console.log(data)
 
     return { posts: data?.data?.posts, mutate, errors: data?.data?.errors }
 }
@@ -48,5 +76,5 @@ export function useTags() {
 
     const { data, mutate } = useSWR(query, fetcher)
 
-    return { categories: data?.data?.tags, mutate, errors: data?.data?.errors }
+    return { tags: data?.data?.tags, mutate, errors: data?.data?.errors }
 }

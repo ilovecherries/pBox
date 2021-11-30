@@ -2,7 +2,7 @@ import Head from 'next/head'
 import React, { useEffect } from 'react'
 import { Badge, Form, Modal, Row, Container, Card, Button } from 'react-bootstrap'
 import Navigation from '../components/Navigation'
-import { usePosts } from '../components/swr'
+import { useMyScore, usePosts } from '../components/swr'
 import { ArrowDown, ArrowUp, Trash } from 'react-bootstrap-icons'
 import { useAuth0 } from '@auth0/auth0-react'
 
@@ -72,10 +72,7 @@ export const getServerSideProps = async (req: any, res: any) => {
         })
     }).then(res => res.json())
 
-    console.log(data)
-    console.log(data.errors)
     const { data: { posts, categories, tags } } = data
-    console.log(posts)
 
     return {
         props: {
@@ -100,6 +97,7 @@ function VoteHandler({ postId, score, myScore }: VoteHandlerProps) {
     const [vote, setVote] = React.useState(myScore)
     const [voteRadio, setVoteRadio] = React.useState(myScore)
     const baseScore = score - (myScore ?? 0)
+    console.log(vote)
 
     useEffect(() => {
         setVote(myScore)
@@ -310,7 +308,6 @@ function PostForm({ categories, tags }: PostFormProps) {
                         <Form.Group>
                             <Form.Label>Tags</Form.Label>
                             {tags && tags.map((t) => (<span key={t.id}>
-                                {/* <Form.Check key={i} type="checkbox" label={t.name} name="tags" value={t.id}/> */}
                                 <input onChange={tagChange} type="checkbox" className="btn-check" id={`posttag-${t.id}`} autoComplete="off" />
                                 <label className="m-1 btn-sm btn btn-outline-primary" htmlFor={`posttag-${t.id}`}>{t.name}</label>
                             </span>))}
@@ -339,8 +336,6 @@ export default function PostsView({ posts, categories, tags }: PostsViewProps) {
     const [categoryFilter, setCategoryFilter] = React.useState<number>(0)
     const [tagFilters, setTagFilters] = React.useState<number[]>([])
     const [textFilter, setTextFilter] = React.useState<string>('')
-    console.log(userPosts)
-    console.log(errors)
 
     React.useEffect(() => {
         mutate()
